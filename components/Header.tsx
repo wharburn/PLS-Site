@@ -88,7 +88,7 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
           {/* Language Toggle */}
           <button
             onClick={() => setLang(lang === 'en' ? 'pt' : 'en')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all text-xs font-bold uppercase tracking-wider relative md:static top-[15px] md:top-0 right-[-10px] md:right-0 ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all text-xs font-bold uppercase tracking-wider relative md:static top-[35px] md:top-0 right-[-40px] md:right-0 ${
               isScrolled
                 ? 'border-slate-200 text-slate-600 hover:bg-slate-50'
                 : 'border-white/20 text-white hover:bg-white/10'

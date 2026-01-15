@@ -18,7 +18,7 @@ const Hero: React.FC<HeroProps> = ({ lang }) => {
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/60 to-transparent"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 w-full pt-24 md:pt-0">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 w-full pt-40 md:pt-0">
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full mb-6">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
