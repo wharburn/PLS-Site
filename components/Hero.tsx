@@ -12,7 +12,7 @@ const Hero: React.FC<HeroProps> = ({ lang }) => {
       <div className="absolute inset-0">
         <img
           src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&q=80&w=2000"
-          className="w-full h-full object-cover md:translate-y-[150px]"
+          className="w-full h-full object-cover"
           alt="London Legal Quarter"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/60 to-transparent"></div>
@@ -20,7 +20,7 @@ const Hero: React.FC<HeroProps> = ({ lang }) => {
 
       <div
         className={`relative z-10 max-w-7xl mx-auto px-6 w-full md:pt-0 ${
-          lang === 'pt' ? 'pt-[510px]' : 'pt-[315px]'
+          lang === 'pt' ? 'pt-[660px]' : 'pt-[465px]'
         }`}
       >
         <div className="max-w-3xl">
