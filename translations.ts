@@ -1,4 +1,3 @@
-
 export type Language = 'en' | 'pt';
 
 export const translations = {
@@ -10,7 +9,7 @@ export const translations = {
       leadership: 'Leadership',
       aiAdvice: 'AI Advice',
       contact: 'Contact',
-      cta: 'Get Expert Advice'
+      cta: 'Get Expert Advice',
     },
     hero: {
       tag: 'Heritage & Innovation',
@@ -21,22 +20,22 @@ export const translations = {
       schedule: 'Schedule Consultation',
       partners: 'Partner Law Firms',
       exp: 'Years Experience',
-      compliance: 'Regulatory Compliance'
+      compliance: 'Regulatory Compliance',
     },
     services: {
       title: 'Our Core Expertise',
       desc: 'Comprehensive professional services delivered with precision and heritage.',
       learnMore: 'Learn More',
       close: 'Close Details',
-      peek: 'Strategic Overview'
+      peek: 'Strategic Overview',
     },
     about: {
       tag: 'Our Leadership',
       credentials: 'BA Hons TFL, ELB, CML, (MCIL)',
       liaison: 'Expert Liaison',
       liaisonDesc: 'Bridging jurisdictions since 1999',
-      bio: 'With decades of experience in bridging the professional landscapes of the United Kingdom and Portugal, Pedro Xavier stands as a beacon of excellence in cross-border consultancy. His multi-disciplinary background as a Chartered Linguist and Business Strategist provides a unique foundation for PLS Consultants\' multidisciplinary success.',
-      cta: 'Consult Pedro'
+      bio: "With decades of experience in bridging the professional landscapes of the United Kingdom and Portugal, Pedro Xavier stands as a beacon of excellence in cross-border consultancy. His multi-disciplinary background as a Chartered Linguist and Business Strategist provides a unique foundation for PLS Consultants' multidisciplinary success.",
+      cta: 'Consult Pedro',
     },
     documentTranslation: {
       freeService: 'Complimentary Service',
@@ -50,24 +49,89 @@ export const translations = {
       downloadBtn: 'Download Translation',
       translatedContent: 'Translated Output',
       waiting: 'Upload a document to begin processing...',
-      disclaimer: 'Note: AI translations are for informational purposes. Certified human translation available upon request.'
+      disclaimer:
+        'Note: AI translations are for informational purposes. Certified human translation available upon request.',
     },
     imageAnalysis: {
       badge: 'Visual Intelligence',
       title: 'Analyze Images & Documents',
-      description: 'Upload photos of contracts, legal documents, or any visual evidence to receive a professional summary and analysis from our AI system.',
+      description:
+        'Upload photos of contracts, legal documents, or any visual evidence to receive a professional summary and analysis from our AI system.',
       uploadLabel: 'Upload Image to Analyze',
       uploadSub: 'Supports JPG, PNG (Max 10MB)',
       promptPlaceholder: 'Ask a specific question about this image (optional)...',
       analyzeBtn: 'Start Analysis',
       analysisResult: 'Expert Visual Analysis',
       waiting: 'Upload an image to generate professional insights.',
-      disclaimer: 'Analysis is performed by Gemini 3 Pro. Preliminary findings only; please consult with our specialists for final verification.'
+      disclaimer:
+        'Analysis is performed by Gemini 3 Pro. Preliminary findings only; please consult with our specialists for final verification.',
     },
     contact: {
       title: 'Reach Out With Confidence',
-      desc: 'Professional excellence begins with a conversation. Visit our Vauxhall office or message us online to discuss your requirements.'
-    }
+      desc: 'Professional excellence begins with a conversation. Visit our Vauxhall office or message us online to discuss your requirements.',
+    },
+    aiLegal: {
+      badge: 'Intelligence Engine',
+      title: 'AI Legal Guidance',
+      desc: 'Harnessing the power of Gemini 3 Pro and real-time Google Search Grounding to provide up-to-the-minute regulatory context for your legal inquiries across the UK and Portugal.',
+      propertyLaw: 'Property Law',
+      immigrationLaw: 'Immigration Law',
+      familyLaw: 'Family Law',
+      disclaimer:
+        'Disclaimer: This tool provides preliminary context using real-time search technology. It does not replace formal legal advice from our registered solicitors.',
+      inputLabel: 'Inquiry Analysis Input',
+      placeholder: 'Detail your question about {category} here...',
+      outputLabel: 'Grounding Analysis Output',
+      waiting: 'Awaiting inquiry session...',
+      copy: 'Copy',
+      copied: 'Copied!',
+      save: 'Save',
+      saved: 'Saved!',
+      thumbsUp: '👍',
+      thumbsDown: '👎',
+      savedTitle: 'Saved Consultations',
+      noSaved: 'No saved consultations yet.',
+      delete: 'Delete',
+    },
+    partners: {
+      title: 'Trust Through Excellence',
+      desc: 'We collaborate with prestigious institutions and regulatory bodies to ensure the highest standards of professional service.',
+      familyProperty: 'Family & Property',
+      familyPropertyDesc: 'Specialists in Family Law and Conveyancing.',
+      immigration: 'Immigration',
+      immigrationDesc: 'Experts in UK Immigration and Visas.',
+      accountancy: 'Accountancy',
+      accountancyDesc: 'Association of Chartered Certified Accountants.',
+      linguistics: 'Linguistics',
+      linguisticsDesc: 'Chartered Institute of Linguists.',
+      hmrcAgent: 'HMRC Agent',
+      icoRegistered: 'ICO Registered',
+      sraRegistered: 'SRA Registered',
+      financial: 'Financial',
+      security: 'Security',
+      legal: 'Legal',
+    },
+    serviceCards: {
+      legalTitle: 'Legal Services',
+      legalDesc: 'Premier legal representation via world-class partner law firms.',
+      legalLong:
+        'Expertise in Property, Immigration, Family, and Portuguese Law through partnerships with Millbank, Montague, and AQ Archers.',
+      accountancyTitle: 'Accountancy & Tax',
+      accountancyDesc: 'ACCA registered accounting and HMRC representation.',
+      accountancyLong:
+        'Strategic tax planning, financial statement preparation, and business advisory services for UK and PT entities.',
+      translationTitle: 'Translation Services',
+      translationDesc: 'Chartered linguists specializing in legal and certified translations.',
+      translationLong:
+        'Certified translation for legal documents, contracts, and certificates with CIOL accreditation.',
+      businessTitle: 'Business Consultancy',
+      businessDesc: 'Cross-border business setup and strategic management.',
+      businessLong:
+        'Guidance on company formation, market entry strategies, and operational compliance in UK and Portugal.',
+      fullDetails: 'Full Details',
+      clickMore: 'Click for more',
+      pressExit: 'Press to exit',
+    },
   },
   pt: {
     nav: {
@@ -77,7 +141,7 @@ export const translations = {
       leadership: 'Liderança',
       aiAdvice: 'Apoio IA',
       contact: 'Contacto',
-      cta: 'Apoio Especializado'
+      cta: 'Apoio Especializado',
     },
     hero: {
       tag: 'Herança & Inovação',
@@ -88,14 +152,14 @@ export const translations = {
       schedule: 'Agendar Consulta',
       partners: 'Sociedades Parceiras',
       exp: 'Anos de Experiência',
-      compliance: 'Conformidade Regulatória'
+      compliance: 'Conformidade Regulatória',
     },
     services: {
       title: 'A Nossa Especialização',
       desc: 'Serviços profissionais abrangentes prestados com precisão e tradição.',
       learnMore: 'Saber Mais',
       close: 'Fechar Detalhes',
-      peek: 'Visão Estratégica'
+      peek: 'Visão Estratégica',
     },
     about: {
       tag: 'A Nossa Liderança',
@@ -103,7 +167,7 @@ export const translations = {
       liaison: 'Ligação Especializada',
       liaisonDesc: 'Unindo jurisdições desde 1999',
       bio: 'Com décadas de experiência na ponte entre os panoramas profissionais do Reino Unido e de Portugal, Pedro Xavier é um pilar de excelência em consultoria transfronteiriça. O seu percurso multidisciplinar como Linguista Certificado e Estrategista de Negócios fornece uma base única para o sucesso da PLS Consultants.',
-      cta: 'Consultar Pedro'
+      cta: 'Consultar Pedro',
     },
     documentTranslation: {
       freeService: 'Serviço Gratuito',
@@ -117,23 +181,90 @@ export const translations = {
       downloadBtn: 'Descarregar Tradução',
       translatedContent: 'Resultado da Tradução',
       waiting: 'Carregue um documento para iniciar o processamento...',
-      disclaimer: 'Nota: As traduções IA são para fins informativos. Tradução humana certificada disponível mediante pedido.'
+      disclaimer:
+        'Nota: As traduções IA são para fins informativos. Tradução humana certificada disponível mediante pedido.',
     },
     imageAnalysis: {
       badge: 'Inteligência Visual',
       title: 'Analisar Imagens e Documentos',
-      description: 'Carregue fotos de contratos, documentos legais ou qualquer evidência visual para receber um resumo profissional e análise do nosso sistema de IA.',
+      description:
+        'Carregue fotos de contratos, documentos legais ou qualquer evidência visual para receber um resumo profissional e análise do nosso sistema de IA.',
       uploadLabel: 'Carregar Imagem para Analisar',
       uploadSub: 'Suporta JPG, PNG (Máx 10MB)',
       promptPlaceholder: 'Faça uma pergunta específica sobre esta imagem (opcional)...',
       analyzeBtn: 'Iniciar Análise',
       analysisResult: 'Análise Visual Especializada',
       waiting: 'Carregue uma imagem para gerar insights profissionais.',
-      disclaimer: 'A análise é realizada pelo Gemini 3 Pro. Resultados preliminares; por favor, consulte os nossos especialistas para verificação final.'
+      disclaimer:
+        'A análise é realizada pelo Gemini 3 Pro. Resultados preliminares; por favor, consulte os nossos especialistas para verificação final.',
     },
     contact: {
       title: 'Contacte-nos com Confiança',
-      desc: 'A excelência profissional começa com uma conversa. Visite o nosso escritório em Vauxhall ou envie-nos uma mensagem online.'
-    }
-  }
+      desc: 'A excelência profissional começa com uma conversa. Visite o nosso escritório em Vauxhall ou envie-nos uma mensagem online.',
+    },
+    aiLegal: {
+      badge: 'Motor de Inteligência',
+      title: 'Orientação Jurídica IA',
+      desc: 'Aproveitando o poder do Gemini 3 Pro e do Google Search Grounding em tempo real para fornecer contexto regulatório atualizado para as suas questões jurídicas no Reino Unido e em Portugal.',
+      propertyLaw: 'Direito Imobiliário',
+      immigrationLaw: 'Direito de Imigração',
+      familyLaw: 'Direito da Família',
+      disclaimer:
+        'Aviso: Esta ferramenta fornece contexto preliminar usando tecnologia de pesquisa em tempo real. Não substitui aconselhamento jurídico formal dos nossos advogados registados.',
+      inputLabel: 'Entrada de Análise de Consulta',
+      placeholder: 'Detalhe a sua questão sobre {category} aqui...',
+      outputLabel: 'Resultado da Análise Fundamentada',
+      waiting: 'Aguardando sessão de consulta...',
+      copy: 'Copiar',
+      copied: 'Copiado!',
+      save: 'Guardar',
+      saved: 'Guardado!',
+      thumbsUp: '👍',
+      thumbsDown: '👎',
+      savedTitle: 'Consultas Guardadas',
+      noSaved: 'Ainda não há consultas guardadas.',
+      delete: 'Eliminar',
+    },
+    partners: {
+      title: 'Confiança Através da Excelência',
+      desc: 'Colaboramos com instituições prestigiadas e organismos reguladores para garantir os mais altos padrões de serviço profissional.',
+      familyProperty: 'Família e Imobiliário',
+      familyPropertyDesc: 'Especialistas em Direito da Família e Transmissões.',
+      immigration: 'Imigração',
+      immigrationDesc: 'Especialistas em Imigração e Vistos do Reino Unido.',
+      accountancy: 'Contabilidade',
+      accountancyDesc: 'Associação de Contabilistas Certificados.',
+      linguistics: 'Linguística',
+      linguisticsDesc: 'Instituto Certificado de Linguistas.',
+      hmrcAgent: 'Agente HMRC',
+      icoRegistered: 'Registado ICO',
+      sraRegistered: 'Registado SRA',
+      financial: 'Financeiro',
+      security: 'Segurança',
+      legal: 'Jurídico',
+    },
+    serviceCards: {
+      legalTitle: 'Serviços Jurídicos',
+      legalDesc:
+        'Representação jurídica de primeira classe através de sociedades de advogados de renome mundial.',
+      legalLong:
+        'Especialização em Direito Imobiliário, Imigração, Família e Direito Português através de parcerias com Millbank, Montague e AQ Archers.',
+      accountancyTitle: 'Contabilidade e Impostos',
+      accountancyDesc: 'Contabilidade registada ACCA e representação HMRC.',
+      accountancyLong:
+        'Planeamento fiscal estratégico, preparação de demonstrações financeiras e serviços de consultoria empresarial para entidades do Reino Unido e Portugal.',
+      translationTitle: 'Serviços de Tradução',
+      translationDesc:
+        'Linguistas certificados especializados em traduções jurídicas e certificadas.',
+      translationLong:
+        'Tradução certificada para documentos jurídicos, contratos e certidões com acreditação CIOL.',
+      businessTitle: 'Consultoria Empresarial',
+      businessDesc: 'Criação de empresas transfronteiriças e gestão estratégica.',
+      businessLong:
+        'Orientação sobre constituição de empresas, estratégias de entrada no mercado e conformidade operacional no Reino Unido e em Portugal.',
+      fullDetails: 'Detalhes Completos',
+      clickMore: 'Clique para mais',
+      pressExit: 'Pressione para sair',
+    },
+  },
 };

@@ -11,7 +11,7 @@ import ImageAnalysis from './components/ImageAnalysis.tsx';
 import NoVoChat from './components/NoVoChat.tsx';
 import PartnerSection from './components/PartnerSection.tsx';
 import ServiceCard from './components/ServiceCard.tsx';
-import { BRAND_LOGOS, PARTNERS, SERVICES } from './constants.tsx';
+import { BRAND_LOGOS, getTranslatedPartners, getTranslatedServices } from './constants.tsx';
 import { Language, translations } from './translations.ts';
 
 const App: React.FC = () => {
@@ -19,6 +19,8 @@ const App: React.FC = () => {
   const [showNoVo, setShowNoVo] = useState(false);
   const [lang, setLang] = useState<Language>('en');
   const t = translations[lang];
+  const services = getTranslatedServices(lang);
+  const partners = getTranslatedPartners(lang);
 
   useEffect(() => {
     console.log('PLS App Initialized');
@@ -67,7 +69,7 @@ const App: React.FC = () => {
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-              {SERVICES.map((service) => (
+              {services.map((service) => (
                 <ServiceCard key={service.id} service={service} lang={lang} />
               ))}
             </div>
@@ -76,7 +78,7 @@ const App: React.FC = () => {
 
         <section id="partners" className="bg-[#0f172a] py-32 relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-          <PartnerSection partners={PARTNERS} />
+          <PartnerSection partners={partners} lang={lang} />
         </section>
 
         <section id="about" className="py-32 bg-[#fdfcfb]">

@@ -1,3 +1,4 @@
+import { Language, translations } from './translations.ts';
 import { Partner, Service, ServiceType } from './types.ts';
 
 export const COLORS = {
@@ -111,3 +112,83 @@ export const PARTNERS: Partner[] = [
     description: 'Chartered Institute of Linguists.',
   },
 ];
+
+export const getTranslatedServices = (lang: Language): Service[] => {
+  const t = translations[lang].serviceCards;
+  return [
+    {
+      id: ServiceType.LEGAL,
+      title: t.legalTitle,
+      description: t.legalDesc,
+      longDescription: t.legalLong,
+      image:
+        'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=1200',
+      icon: '⚖️',
+      color: COLORS.heritageBlue,
+    },
+    {
+      id: ServiceType.ACCOUNTANCY,
+      title: t.accountancyTitle,
+      description: t.accountancyDesc,
+      longDescription: t.accountancyLong,
+      image:
+        'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=1200',
+      icon: '📊',
+      color: '#0d9488',
+    },
+    {
+      id: ServiceType.TRANSLATION,
+      title: t.translationTitle,
+      description: t.translationDesc,
+      longDescription: t.translationLong,
+      image:
+        'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&q=80&w=1200',
+      icon: '🗣️',
+      color: COLORS.aiPurple,
+    },
+    {
+      id: ServiceType.BUSINESS,
+      title: t.businessTitle,
+      description: t.businessDesc,
+      longDescription: t.businessLong,
+      image:
+        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1200',
+      icon: '💼',
+      color: COLORS.prestigeGold,
+    },
+  ];
+};
+
+export const getTranslatedPartners = (lang: Language): Partner[] => {
+  const t = translations[lang].partners;
+  return [
+    {
+      name: 'Montague Solicitors',
+      logo: BRAND_LOGOS.MONTAGUE,
+      url: '#',
+      specialization: t.familyProperty,
+      description: t.familyPropertyDesc,
+    },
+    {
+      name: 'AQ Archers',
+      logo: BRAND_LOGOS.AQ_ARCHERS,
+      url: '#',
+      specialization: t.immigration,
+      description: t.immigrationDesc,
+    },
+    {
+      name: 'ACCA',
+      logo: BRAND_LOGOS.ACCA,
+      url: '#',
+      specialization: t.accountancy,
+      description: t.accountancyDesc,
+    },
+    {
+      name: 'CIOL',
+      logo: BRAND_LOGOS.CIOL,
+      url: '#',
+      specialization: t.linguistics,
+      description: t.linguisticsDesc,
+    },
+  ];
+};
