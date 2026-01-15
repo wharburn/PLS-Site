@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { translateDocument } from '../services/gemini.ts';
 import { Language, translations } from '../translations.ts';
 
@@ -45,7 +44,7 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
   const startProgress = () => {
     setProgress(0);
     if (progressIntervalRef.current) window.clearInterval(progressIntervalRef.current);
-    
+
     progressIntervalRef.current = window.setInterval(() => {
       setProgress((prev) => {
         if (prev >= 90) return prev; // Hold at 90% until finished
@@ -69,16 +68,23 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
     setTranslatedText(null);
     startProgress();
 
-    let base64Image = null;
-    if (preview && file?.type.startsWith('image/')) {
-      base64Image = preview.split(',')[1];
+    let base64File = null;
+    let fileMimeType = null;
+
+    if (preview && file) {
+      base64File = preview.split(',')[1];
+      if (file.type.startsWith('image/')) {
+        fileMimeType = file.type;
+      } else if (file.type === 'application/pdf') {
+        fileMimeType = 'application/pdf';
+      }
     }
 
     const source = direction === 'EN-PT' ? 'English' : 'Portuguese';
     const target = direction === 'EN-PT' ? 'Portuguese' : 'English';
 
     try {
-      const result = await translateDocument(sourceText, base64Image, source, target);
+      const result = await translateDocument(sourceText, base64File, fileMimeType, source, target);
       if (result) {
         setTranslatedText(result);
         setStatus('success');
@@ -87,7 +93,7 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
         throw new Error('Empty result');
       }
     } catch (error) {
-      console.error(error);
+      console.error('Translation error:', error);
       setStatus('error');
       stopProgress(false);
     }
@@ -114,18 +120,20 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
             {t.freeService}
           </div>
           <h2 className="text-4xl font-bold text-slate-900 mb-6">{t.title}</h2>
-          <p className="text-slate-600 text-lg mb-8">
-            {t.desc}
-          </p>
+          <p className="text-slate-600 text-lg mb-8">{t.desc}</p>
 
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <label className="block text-sm font-bold text-slate-700 mb-4 uppercase tracking-wider">{t.selectDirection}</label>
+              <label className="block text-sm font-bold text-slate-700 mb-4 uppercase tracking-wider">
+                {t.selectDirection}
+              </label>
               <div className="flex gap-4">
                 <button
                   onClick={() => setDirection('EN-PT')}
                   className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all font-bold text-sm ${
-                    direction === 'EN-PT' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-100 text-slate-400 hover:border-slate-200'
+                    direction === 'EN-PT'
+                      ? 'border-amber-500 bg-amber-50 text-amber-700'
+                      : 'border-slate-100 text-slate-400 hover:border-slate-200'
                   }`}
                 >
                   EN → PT
@@ -133,7 +141,9 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
                 <button
                   onClick={() => setDirection('PT-EN')}
                   className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all font-bold text-sm ${
-                    direction === 'PT-EN' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-100 text-slate-400 hover:border-slate-200'
+                    direction === 'PT-EN'
+                      ? 'border-amber-500 bg-amber-50 text-amber-700'
+                      : 'border-slate-100 text-slate-400 hover:border-slate-200'
                   }`}
                 >
                   PT → EN
@@ -141,32 +151,48 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
               </div>
             </div>
 
-            <div 
+            <div
               onClick={() => fileInputRef.current?.click()}
               className="group cursor-pointer bg-slate-50 border-2 border-dashed border-slate-200 p-10 rounded-2xl flex flex-col items-center justify-center text-center hover:border-amber-500 hover:bg-amber-50/30 transition-all relative overflow-hidden"
             >
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept="image/*,.pdf,.txt" 
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*,.pdf,.txt"
                 onChange={handleFileChange}
               />
               <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-slate-400 mb-4 group-hover:scale-110 group-hover:text-amber-500 transition-all shadow-sm">
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
                 </svg>
               </div>
-              <p className="font-bold text-slate-700 text-sm mb-1 line-clamp-1">{file ? file.name : t.dropFiles}</p>
+              <p className="font-bold text-slate-700 text-sm mb-1 line-clamp-1">
+                {file ? file.name : t.dropFiles}
+              </p>
               <p className="text-xs text-slate-400">{t.fileLimit}</p>
-              
+
               {file && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setFile(null); setPreview(null); }}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFile(null);
+                    setPreview(null);
+                  }}
                   className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               )}
@@ -192,8 +218,18 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
               ) : (
                 <>
                   <span>{t.translateBtn}</span>
-                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  <svg
+                    className="w-5 h-5 group-hover:translate-x-1 transition-transform"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    />
                   </svg>
                 </>
               )}
@@ -205,21 +241,26 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
           <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 min-h-[550px] flex flex-col relative overflow-hidden">
             {/* Status Indicators */}
             <div className="absolute top-0 left-0 right-0">
-               {status === 'processing' && (
-                 <div className="h-1 bg-slate-100 overflow-hidden">
-                   <div 
+              {status === 'processing' && (
+                <div className="h-1 bg-slate-100 overflow-hidden">
+                  <div
                     className="h-full bg-amber-500 transition-all duration-500 ease-out"
                     style={{ width: `${progress}%` }}
-                   ></div>
-                 </div>
-               )}
+                  ></div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-xl font-bold text-slate-900 flex items-center gap-3">
                 <span className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-sm">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
                   </svg>
                 </span>
                 {t.translatedContent}
@@ -228,7 +269,12 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
               {status === 'success' && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-lg text-xs font-bold animate-in fade-in zoom-in-95">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   Translation Complete
                 </div>
@@ -237,7 +283,12 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
               {status === 'error' && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold animate-in fade-in zoom-in-95">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                   Error Occurred
                 </div>
@@ -255,7 +306,9 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
                   </div>
                   <div className="text-center">
                     <p className="text-slate-900 font-bold mb-1">Analyzing Content...</p>
-                    <p className="text-slate-400 text-xs italic">Extracting text and matching linguistic patterns</p>
+                    <p className="text-slate-400 text-xs italic">
+                      Extracting text and matching linguistic patterns
+                    </p>
                   </div>
                 </div>
               ) : translatedText ? (
@@ -264,10 +317,20 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
                 </p>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50 py-20">
-                   <svg className="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                   </svg>
-                   <p className="text-sm font-medium italic">{t.waiting}</p>
+                  <svg
+                    className="w-12 h-12 mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <p className="text-sm font-medium italic">{t.waiting}</p>
                 </div>
               )}
             </div>
@@ -281,8 +344,18 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({ lang }) => {
                   onClick={downloadTxt}
                   className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 rounded-xl font-bold text-sm transition-all shadow-lg flex items-center justify-center gap-3 group animate-in slide-in-from-right-4"
                 >
-                  <svg className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  <svg
+                    className="w-5 h-5 group-hover:translate-y-0.5 transition-transform"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
                   </svg>
                   {t.downloadBtn}
                 </button>
