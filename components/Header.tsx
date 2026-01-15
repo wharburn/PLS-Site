@@ -1,0 +1,105 @@
+
+import React, { useState, useRef, useEffect } from 'react';
+import { LOGO_COMPONENT, COLORS } from '../constants.tsx';
+import { translations, Language } from '../translations.ts';
+
+interface HeaderProps {
+  onAdminClick: () => void;
+  lang: Language;
+  setLang: (l: Language) => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const adminTimerRef = useRef<number | null>(null);
+  const t = translations[lang];
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleAdminStart = () => {
+    adminTimerRef.current = window.setTimeout(() => {
+      onAdminClick();
+    }, 10000);
+  };
+
+  const handleAdminEnd = () => {
+    if (adminTimerRef.current) {
+      clearTimeout(adminTimerRef.current);
+    }
+  };
+
+  const navItems = [
+    { name: t.nav.home, href: '#home' },
+    { name: t.nav.services, href: '#services' },
+    { name: t.nav.leadership, href: '#about' },
+    { name: lang === 'en' ? 'Translation' : 'Tradução', href: '#translation' },
+    { name: lang === 'en' ? 'Analysis' : 'Análise', href: '#analysis' },
+    { name: t.nav.aiAdvice, href: '#ai-advice' },
+    { name: t.nav.contact, href: '#contact' },
+  ];
+
+  return (
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'glass-nav py-3 shadow-md' : 'bg-transparent py-6'}`}>
+      <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          {LOGO_COMPONENT('w-12 h-12 shadow-xl')}
+          <div className="flex flex-col">
+            <span className={`font-bold text-xl tracking-tight leading-none ${isScrolled ? 'text-slate-900' : 'text-white'}`}>PLS Consultants</span>
+            <span className={`text-[10px] uppercase tracking-widest mt-1 ${isScrolled ? 'text-slate-500' : 'text-slate-300'}`}>Professional Excellence</span>
+          </div>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-8">
+          {navItems.map((item) => (
+            <a
+              key={item.name}
+              href={item.href}
+              className={`text-sm font-medium hover:text-amber-500 transition-colors ${isScrolled ? 'text-slate-700' : 'text-white'}`}
+            >
+              {item.name}
+            </a>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Language Toggle */}
+          <button 
+            onClick={() => setLang(lang === 'en' ? 'pt' : 'en')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all text-xs font-bold uppercase tracking-wider ${
+              isScrolled ? 'border-slate-200 text-slate-600 hover:bg-slate-50' : 'border-white/20 text-white hover:bg-white/10'
+            }`}
+          >
+            <span className={lang === 'en' ? 'text-amber-500' : ''}>EN</span>
+            <div className="w-px h-3 bg-current opacity-30"></div>
+            <span className={lang === 'pt' ? 'text-amber-500' : ''}>PT</span>
+          </button>
+
+          <button
+            onMouseDown={handleAdminStart}
+            onMouseUp={handleAdminEnd}
+            onMouseLeave={handleAdminEnd}
+            className={`p-2 rounded-full transition-colors ${isScrolled ? 'text-slate-400 hover:text-slate-600' : 'text-white/40 hover:text-white'}`}
+            title="Admin Access (Hold 10s)"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </button>
+          
+          <a
+            href="#contact"
+            className="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-amber-500/20"
+          >
+            {t.nav.cta}
+          </a>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Header;
