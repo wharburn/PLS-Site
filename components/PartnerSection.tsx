@@ -52,7 +52,7 @@ const PartnerSection: React.FC<PartnerSectionProps> = ({ partners, lang }) => {
         {[
           { title: t.hmrcAgent, detail: '', tag: t.financial },
           { title: t.icoRegistered, detail: '', tag: t.security },
-          { title: t.sraRegistered, detail: '', tag: t.legal },
+          { title: 'Solicitors (Partner Firms)', detail: '', tag: t.legal },
         ].map((cert) => (
           <div
             key={cert.title}
