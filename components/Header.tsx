@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { LOGO_COMPONENT } from '../constants.tsx';
 import { Language, translations } from '../translations.ts';
 
@@ -32,13 +33,13 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
   };
 
   const navItems = [
-    { name: t.nav.home, href: '#home' },
-    { name: t.nav.services, href: '#services' },
-    { name: t.nav.leadership, href: '#about' },
-    { name: lang === 'en' ? 'Translation' : 'Tradução', href: '#translation' },
-    { name: lang === 'en' ? 'Analysis' : 'Análise', href: '#analysis' },
-    { name: t.nav.aiAdvice, href: '#ai-advice' },
-    { name: t.nav.contact, href: '#contact' },
+    { name: t.nav.home, href: '/' },
+    { name: t.nav.services, href: '/#services' },
+    { name: t.nav.partners, href: '/#partners' },
+    { name: t.nav.leadership, href: '/#about' },
+    { name: 'Client Portal', href: '/client' },
+    { name: 'AI Suite', href: '/ai/legal' },
+    { name: t.nav.contact, href: '/#contact' },
   ];
 
   return (
@@ -70,15 +71,15 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
 
         <div className="hidden lg:flex items-center gap-8">
           {navItems.map((item) => (
-            <a
+            <Link
               key={item.name}
-              href={item.href}
+              to={item.href}
               className={`text-sm font-medium hover:text-amber-500 transition-colors ${
                 isScrolled ? 'text-slate-700' : 'text-white'
               }`}
             >
               {item.name}
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -116,14 +117,14 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
             </svg>
           </button>
 
-          <a
-            href="#contact"
+          <Link
+            to="/client"
             className={`bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-amber-500/20 ${
               lang === 'pt' ? 'relative right-[15px]' : ''
             }`}
           >
             {t.nav.cta}
-          </a>
+          </Link>
         </div>
       </div>
     </nav>

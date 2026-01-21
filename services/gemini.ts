@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 
 // Ensure we have a valid initialization, fallback to empty string to prevent constructor crash
-const API_KEY = process.env.API_KEY || '';
+const API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 export const getLegalAdvice = async (query: string, category: string, language: string = 'en') => {

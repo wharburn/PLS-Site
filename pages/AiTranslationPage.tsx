@@ -1,0 +1,28 @@
+import React from 'react';
+import DocumentTranslation from '../components/DocumentTranslation.tsx';
+import { Language, translations } from '../translations.ts';
+
+interface AiTranslationPageProps {
+  lang: Language;
+}
+
+const AiTranslationPage: React.FC<AiTranslationPageProps> = ({ lang }) => {
+  const t = translations[lang].documentTranslation;
+
+  return (
+    <div className="bg-white py-20">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-[0.25em]">
+            AI Suite
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mt-4 font-serif italic">{t.title}</h1>
+          <p className="text-lg text-slate-600 mt-3 max-w-3xl leading-relaxed">{t.desc}</p>
+        </div>
+        <DocumentTranslation lang={lang} />
+      </div>
+    </div>
+  );
+};
+
+export default AiTranslationPage;

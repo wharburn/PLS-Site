@@ -10,9 +10,10 @@ interface Message {
 interface NoVoChatProps {
   onClose: () => void;
   lang?: 'en' | 'pt';
+  variant?: 'overlay' | 'panel';
 }
 
-const NoVoChat: React.FC<NoVoChatProps> = ({ onClose, lang = 'en' }) => {
+const NoVoChat: React.FC<NoVoChatProps> = ({ onClose, lang = 'en', variant = 'overlay' }) => {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'model', content: lang === 'pt' ? "Olá! Eu sou o NoVo, o seu assistente inteligente na PLS Consultants. Como posso ajudar com os nossos serviços Jurídicos, Contabilísticos ou de Tradução hoje?" : "Hello! I am NoVo, your intelligent assistant at PLS Consultants. How can I assist you with our Legal, Accountancy, or Translation services today?" }
   ]);
@@ -46,8 +47,13 @@ const NoVoChat: React.FC<NoVoChatProps> = ({ onClose, lang = 'en' }) => {
     }
   };
 
+  const containerClass =
+    variant === 'panel'
+      ? 'relative w-full h-[720px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200'
+      : 'fixed bottom-8 right-8 w-[400px] h-[600px] bg-white rounded-3xl shadow-2xl z-[100] flex flex-col overflow-hidden border border-slate-200';
+
   return (
-    <div className="fixed bottom-8 right-8 w-[400px] h-[600px] bg-white rounded-3xl shadow-2xl z-[100] flex flex-col overflow-hidden border border-slate-200">
+    <div className={containerClass}>
       {/* Header */}
       <div className="bg-slate-900 p-6 text-white flex items-center justify-between">
         <div className="flex items-center gap-4">
