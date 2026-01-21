@@ -66,7 +66,7 @@ const AboutPedro: React.FC<AboutPedroProps> = ({ lang }) => {
               { label: lang === 'en' ? 'Chartered Linguist (UK)' : 'Linguista Certificado (UK)', icon: '🗣️' },
               { label: lang === 'en' ? 'HMRC Registered Agent' : 'Agente Registado HMRC', icon: '🏛️' },
               { label: lang === 'en' ? 'Legal Specialist Liaison' : 'Ligação Jurídica Especializada', icon: '🤝' },
-              { label: lang === 'en' ? 'Portuguese Law Expert' : 'Especialista em Direito PT', icon: '⚖️' }
+              { label: lang === 'en' ? 'Portuguese Legal Specialist Liaison' : 'Ligação Jurídica Portuguesa', icon: '⚖️' }
             ].map(item => (
               <div key={item.label} className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                 <span className="text-xl">{item.icon}</span>
