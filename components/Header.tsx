@@ -48,11 +48,7 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
   ];
 
   return (
-    <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white py-3 shadow-md' : 'bg-gray-900/25 md:bg-transparent py-6'
-      }`}
-    >
+    <nav className="fixed top-0 w-full z-50 bg-white shadow-md py-4">
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
           <div className="flex items-center gap-3">
           <div
@@ -64,16 +60,12 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
           </div>
             <div className="flex flex-col">
               <span
-                className={`font-bold text-xl tracking-tight leading-none ${
-                isScrolled ? 'text-slate-900' : 'text-white'
-              }`}
-            >
+                 className={`font-bold text-xl tracking-tight leading-none text-slate-900`}
+             >
               PLS Consultants
-            </span>
-            <span
-              className={`text-[10px] uppercase tracking-widest mt-1 ${
-                isScrolled ? 'text-slate-500' : 'text-slate-300'
-              }`}
+             </span>
+             <span
+              className={`text-[10px] uppercase tracking-widest mt-1 text-slate-500`}
             >
               Professional Excellence
             </span>
@@ -85,9 +77,7 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`text-sm font-medium hover:text-amber-500 transition-colors ${
-                isScrolled ? 'text-slate-700' : 'text-white'
-              }`}
+                 className={`text-sm font-medium hover:text-amber-500 transition-colors text-slate-700`}
             >
               {item.name}
             </Link>
@@ -98,11 +88,7 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
           {/* Language Toggle */}
           <button
             onClick={() => setLang(lang === 'en' ? 'pt' : 'en')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all text-xs font-bold uppercase tracking-wider relative md:static top-[35px] md:top-0 right-[-40px] md:right-0 ${
-              isScrolled
-                ? 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                : 'border-white/20 text-white hover:bg-white/10'
-            }`}
+             className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all text-xs font-bold uppercase tracking-wider relative md:static top-[35px] md:top-0 right-[-40px] md:right-0 border-slate-200 text-slate-600 hover:bg-slate-50`}
           >
             <span className={lang === 'en' ? 'text-amber-500' : ''}>EN</span>
             <div className="w-px h-3 bg-current opacity-30"></div>
@@ -113,10 +99,8 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
             onMouseDown={handleAdminStart}
             onMouseUp={handleAdminEnd}
             onMouseLeave={handleAdminEnd}
-            className={`p-2 rounded-full transition-colors ${
-              isScrolled ? 'text-slate-400 hover:text-slate-600' : 'text-white/40 hover:text-white'
-            }`}
-            title="Admin Access (Hold 10s)"
+             className={`p-2 rounded-full transition-colors text-slate-400 hover:text-slate-600`}
+             title="Admin Access (Hold 5s)"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
