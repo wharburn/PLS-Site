@@ -152,8 +152,8 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
   }
 
   return (
-    <div className="bg-slate-50 py-20">
-      <div className="max-w-6xl mx-auto px-6 space-y-12">
+    <div className="bg-slate-50 py-14">
+      <div className="max-w-6xl mx-auto px-6 space-y-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-[0.25em]">
@@ -170,11 +170,11 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">Profile details</h2>
-            <form className="space-y-6" onSubmit={saveProfile}>
-              <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Profile details</h2>
+            <form className="space-y-5" onSubmit={saveProfile}>
+              <div className="grid md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Name</label>
                   <input
@@ -194,7 +194,7 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
                   />
                 </div>
               </div>
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Address</label>
                   <input
@@ -226,8 +226,8 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
             </form>
           </div>
 
-          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Audit history</h3>
+          <div className="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
+            <h3 className="text-lg font-bold text-slate-900 mb-3">Audit history</h3>
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
               {audit.length === 0 && (
                 <div className="text-sm text-slate-400">No changes recorded yet.</div>
@@ -242,17 +242,17 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-bold text-slate-900">Identity vault</h3>
               <label className="px-3 py-2 bg-amber-50 text-amber-700 rounded-lg text-sm font-semibold cursor-pointer border border-amber-100">
                 Upload ID
                 <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => handleUpload('identity', e.target.files)} />
               </label>
             </div>
-            <p className="text-sm text-slate-500 mb-4">Add passport or driver licence files. Stored securely with a change record.</p>
-            <div className="space-y-3">
+            <p className="text-sm text-slate-500 mb-3">Add passport or driver licence files. Stored securely with a change record.</p>
+            <div className="space-y-2.5">
               {identityDocs.length === 0 && <div className="text-sm text-slate-400">No identity documents uploaded.</div>}
               {identityDocs.map((doc) => (
                 <a
@@ -281,16 +281,16 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-bold text-slate-900">Accounting folder</h3>
               <label className="px-3 py-2 bg-slate-900 text-amber-500 rounded-lg text-sm font-semibold cursor-pointer border border-slate-800">
                 Upload document
                 <input type="file" className="hidden" onChange={(e) => handleUpload('accounting', e.target.files)} />
               </label>
             </div>
-            <p className="text-sm text-slate-500 mb-4">Store working papers, tax packs, or evidence. Organised and logged.</p>
-            <div className="space-y-3">
+            <p className="text-sm text-slate-500 mb-3">Store working papers, tax packs, or evidence. Organised and logged.</p>
+            <div className="space-y-2.5">
               {accountingDocs.length === 0 && <div className="text-sm text-slate-400">No accounting documents uploaded.</div>}
               {accountingDocs.map((doc) => (
                 <a
@@ -320,8 +320,8 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-slate-900">AI tools</h3>
             <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Client access only</div>
           </div>
