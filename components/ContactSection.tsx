@@ -51,7 +51,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({ lang }) => {
               </div>
               <div>
                 <h4 className="text-lg font-bold text-slate-900">{lang === 'en' ? 'Email Address' : 'E-mail'}</h4>
-                <p className="text-slate-500 underline">pedroxavier@plsconsultants.co.uk</p>
+                <p className="text-slate-500 underline">info@plsconsultants.co.uk</p>
               </div>
             </div>
 
