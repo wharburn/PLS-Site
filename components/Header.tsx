@@ -12,6 +12,9 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const adminTimerRef = useRef<number | null>(null);
+  const [showKeypad, setShowKeypad] = useState(false);
+  const [pin, setPin] = useState('');
+  const PASSCODE = '0412';
   const t = translations[lang];
 
   useEffect(() => {
@@ -22,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
 
   const handleAdminStart = () => {
     adminTimerRef.current = window.setTimeout(() => {
-      onAdminClick();
+      setShowKeypad(true);
     }, 10000);
   };
 
@@ -48,11 +51,17 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          {LOGO_COMPONENT('w-12 h-12 shadow-xl')}
-          <div className="flex flex-col">
-            <span
-              className={`font-bold text-xl tracking-tight leading-none ${
+          <div className="flex items-center gap-3">
+          <div
+            onMouseDown={handleAdminStart}
+            onMouseUp={handleAdminEnd}
+            onMouseLeave={handleAdminEnd}
+          >
+            {LOGO_COMPONENT('w-12 h-12 shadow-xl cursor-pointer')}
+          </div>
+            <div className="flex flex-col">
+              <span
+                className={`font-bold text-xl tracking-tight leading-none ${
                 isScrolled ? 'text-slate-900' : 'text-white'
               }`}
             >
@@ -126,6 +135,70 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
           </Link>
         </div>
       </div>
+
+      {showKeypad && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] flex items-center justify-center" onClick={() => { setShowKeypad(false); setPin(''); }}>
+          <div className="bg-white rounded-3xl p-6 w-[320px] shadow-2xl border border-slate-200" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center mb-4">
+              <div className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">Admin Access</div>
+              <div className="text-lg font-bold text-slate-900 mt-1">Enter 4-digit code</div>
+              <div className="mt-2 text-xl font-mono tracking-[0.3em]">{pin.padEnd(4, '•')}</div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[1,2,3,4,5,6,7,8,9].map((n) => (
+                <button
+                  key={n}
+                  className="py-3 rounded-xl border border-slate-200 text-slate-900 font-bold text-xl hover:border-amber-300 hover:text-amber-700"
+                  onClick={() => {
+                    const next = (pin + n.toString()).slice(0,4);
+                    setPin(next);
+                    if (next.length === 4) {
+                      if (next === PASSCODE) {
+                        setShowKeypad(false);
+                        setPin('');
+                        onAdminClick();
+                      } else {
+                        setTimeout(() => setPin(''), 300);
+                      }
+                    }
+                  }}
+                >
+                  {n}
+                </button>
+              ))}
+              <div />
+              <button
+                className="py-3 rounded-xl border border-slate-200 text-slate-900 font-bold text-xl hover:border-amber-300 hover:text-amber-700"
+                onClick={() => {
+                  const next = (pin + '0').slice(0,4);
+                  setPin(next);
+                  if (next.length === 4) {
+                    if (next === PASSCODE) {
+                      setShowKeypad(false);
+                      setPin('');
+                      onAdminClick();
+                    } else {
+                      setTimeout(() => setPin(''), 300);
+                    }
+                  }
+                }}
+              >0</button>
+              <button
+                className="py-3 rounded-xl border border-slate-200 text-slate-900 font-bold text-xl hover:border-amber-300 hover:text-amber-700"
+                onClick={() => setPin(pin.slice(0, -1))}
+              >
+                ⌫
+              </button>
+            </div>
+            <button
+              onClick={() => { setShowKeypad(false); setPin(''); }}
+              className="w-full py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:border-slate-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
