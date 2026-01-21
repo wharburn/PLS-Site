@@ -28,7 +28,7 @@ const App: React.FC = () => {
       <div className="min-h-screen flex flex-col bg-[#fdfcfb]">
         <Header onAdminClick={() => setIsAdminOpen(true)} lang={lang} setLang={setLang} />
 
-        <main className="flex-grow">
+        <main className="flex-grow pt-16 md:pt-20">
           <Routes>
             <Route path="/" element={<HomePage lang={lang} />} />
             <Route path="/ai/legal" element={<AiLegalPage lang={lang} />} />
