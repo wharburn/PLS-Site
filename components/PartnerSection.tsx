@@ -50,9 +50,9 @@ const PartnerSection: React.FC<PartnerSectionProps> = ({ partners, lang }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { title: t.hmrcAgent, detail: 'ID: IWII8EFHKXM8', tag: t.financial },
-          { title: t.icoRegistered, detail: 'Reg: ZA221652', tag: t.security },
-          { title: t.sraRegistered, detail: 'ID: 666982', tag: t.legal },
+          { title: t.hmrcAgent, detail: '', tag: t.financial },
+          { title: t.icoRegistered, detail: '', tag: t.security },
+          { title: t.sraRegistered, detail: '', tag: t.legal },
         ].map((cert) => (
           <div
             key={cert.title}
@@ -61,7 +61,7 @@ const PartnerSection: React.FC<PartnerSectionProps> = ({ partners, lang }) => {
             <div>
               <div className="text-xs text-amber-500 font-bold uppercase mb-1">{cert.tag}</div>
               <div className="text-white font-bold">{cert.title}</div>
-              <div className="text-slate-400 text-sm font-mono">{cert.detail}</div>
+              {cert.detail && <div className="text-slate-400 text-sm font-mono">{cert.detail}</div>}
             </div>
             <div className="bg-white/5 p-3 rounded-full">
               <svg

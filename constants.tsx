@@ -38,7 +38,7 @@ export const LOGO_COMPONENT = (className: string) => (
 export const SERVICES: Service[] = [
   {
     id: ServiceType.LEGAL,
-    title: 'Legal Services',
+    title: 'Solicitors (Partner Firms)',
     description: 'Premier legal representation via world-class partner law firms.',
     longDescription:
       'Expertise in Property, Immigration, Family, and Portuguese Law through partnerships with Millbank, Montague, and AQ Archers.',
