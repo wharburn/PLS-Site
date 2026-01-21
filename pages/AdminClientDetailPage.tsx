@@ -91,8 +91,12 @@ const AdminClientDetailPage: React.FC = () => {
             <div className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Admin view</div>
             <h1 className="text-3xl font-bold text-slate-900 mt-2">{client.profile.name || email}</h1>
             <div className="text-slate-600 text-sm">{client.profile.email}</div>
-            <div className="text-slate-500 text-sm">{client.profile.address}</div>
-            <div className="text-slate-500 text-sm">{client.profile.phone}</div>
+            <div className="text-slate-500 text-sm whitespace-pre-line">
+              {client.profile.address.replace(/,\s*/g, ',\n')}
+            </div>
+            <div className="text-slate-500 text-sm whitespace-pre-line">
+              {client.profile.phone.replace(/\s*\/\s*/g, '\n')}
+            </div>
             <div className="text-[11px] text-slate-400 mt-2">Updated {new Date(client.updatedAt).toLocaleString()}</div>
           </div>
         </div>
