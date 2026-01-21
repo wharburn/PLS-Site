@@ -11,6 +11,8 @@ type StoredDoc = {
   isImage: boolean;
   docKind: string;
   note: string;
+  data?: string;
+  mime?: string;
 };
 
 type StoredClient = {

@@ -11,6 +11,8 @@ type UploadedDoc = {
   isImage: boolean;
   docKind: 'passport' | 'driver_license' | 'bank_statement' | 'compliance' | 'expenses' | 'other';
   note: string;
+  data?: string;
+  mime?: string;
 };
 
 type ClientRecord = {
@@ -89,23 +91,33 @@ const ClientDocumentsPage: React.FC = () => {
     return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const handleUpload = (
+  const readFileAsDataURL = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleUpload = async (
     category: UploadedDoc['category'],
     fileList: FileList | null,
     docKind: UploadedDoc['docKind']
   ) => {
     if (!fileList || fileList.length === 0) return;
     const files = Array.from(fileList);
-    const newEntries: UploadedDoc[] = files.map((file) => {
-      const url = URL.createObjectURL(file);
-      objectUrlsRef.current.push(url);
+    const dataUrls = await Promise.all(files.map((f) => readFileAsDataURL(f)));
+    const newEntries: UploadedDoc[] = files.map((file, idx) => {
+      const data = dataUrls[idx];
       return {
         id: crypto.randomUUID(),
         name: file.name,
         size: file.size,
         category,
         timestamp: new Date().toISOString(),
-        url,
+        url: data,
+        data,
+        mime: file.type,
         isImage: file.type.startsWith('image/'),
         docKind,
         note: '',
@@ -137,19 +149,20 @@ const ClientDocumentsPage: React.FC = () => {
     replaceInputRef.current?.click();
   };
 
-  const handleReplace = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReplace = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !replaceTarget) return;
     const file = files[0];
-    const url = URL.createObjectURL(file);
-    objectUrlsRef.current.push(url);
+    const data = await readFileAsDataURL(file);
     const updated: UploadedDoc = {
       ...replaceTarget,
       id: crypto.randomUUID(),
       name: file.name,
       size: file.size,
       timestamp: new Date().toISOString(),
-      url,
+      url: data,
+      data,
+      mime: file.type,
       isImage: file.type.startsWith('image/'),
     };
     setDocs((prev) => {

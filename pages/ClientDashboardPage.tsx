@@ -30,6 +30,8 @@ type UploadedDoc = {
   isImage: boolean;
   docKind: 'passport' | 'driver_license' | 'bank_statement' | 'compliance' | 'expenses' | 'other';
   note: string;
+  data?: string;
+  mime?: string;
 };
 
 const defaultProfile: Profile = {
