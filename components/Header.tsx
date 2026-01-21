@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LOGO_COMPONENT } from '../constants.tsx';
 import { Language, translations } from '../translations.ts';
 
@@ -16,6 +16,8 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
   const [pin, setPin] = useState('');
   const PASSCODE = '0412';
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const hideCta = pathname.startsWith('/admin') || pathname.startsWith('/client');
   const t = translations[lang];
 
   useEffect(() => {
@@ -78,12 +80,12 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
           </div>
         </div>
 
-        <div className="hidden lg:flex items-center gap-8">
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={`text-sm font-medium hover:text-amber-500 transition-colors ${
+          <div className="hidden lg:flex items-center gap-8">
+            {navItems.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={`text-sm font-medium hover:text-amber-500 transition-colors ${
                 isScrolled ? 'text-slate-700' : 'text-white'
               }`}
             >
@@ -92,7 +94,7 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
           ))}
         </div>
 
-        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
           {/* Language Toggle */}
           <button
             onClick={() => setLang(lang === 'en' ? 'pt' : 'en')}
@@ -126,14 +128,16 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
             </svg>
           </button>
 
-          <Link
-            to="/client"
-            className={`bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-amber-500/20 ${
-              lang === 'pt' ? 'relative right-[15px]' : ''
-            }`}
-          >
-            {t.nav.cta}
-          </Link>
+          {!hideCta && (
+            <Link
+              to="/client"
+              className={`bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-amber-500/20 ${
+                lang === 'pt' ? 'relative right-[15px]' : ''
+              }`}
+            >
+              {t.nav.cta}
+            </Link>
+          )}
         </div>
       </div>
 
