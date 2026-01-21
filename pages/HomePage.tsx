@@ -122,14 +122,14 @@ const HomePage: React.FC<HomePageProps> = ({ lang }) => {
         <Hero lang={lang} />
       </section>
 
-      <div className="bg-slate-900 py-4 border-y border-amber-500/20 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 flex flex-wrap justify-center md:justify-between items-center gap-8 opacity-60 grayscale hover:grayscale-0 transition-all">
-          <span className="text-[10px] text-white font-bold tracking-[0.2em] uppercase">HMRC Agent IWII8EFHKXM8</span>
-          <span className="text-[10px] text-white font-bold tracking-[0.2em] uppercase">SRA Foreign Lawyer 666982</span>
-          <span className="text-[10px] text-white font-bold tracking-[0.2em] uppercase">ICO Registered ZA221652</span>
-          <span className="text-[10px] text-white font-bold tracking-[0.2em] uppercase">ACCA Certified Member</span>
+        <div className="bg-slate-900 py-4 border-y border-amber-500/20 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6 flex flex-wrap justify-center md:justify-between items-center gap-8 opacity-60 grayscale hover:grayscale-0 transition-all">
+            <span className="text-[10px] text-white font-bold tracking-[0.2em] uppercase">HMRC Agent</span>
+            <span className="text-[10px] text-white font-bold tracking-[0.2em] uppercase">SRA Foreign Lawyer</span>
+            <span className="text-[10px] text-white font-bold tracking-[0.2em] uppercase">ICO Registered</span>
+            <span className="text-[10px] text-white font-bold tracking-[0.2em] uppercase">ACCA Certified Member</span>
+          </div>
         </div>
-      </div>
 
       <section id="services" className="py-24 bg-white relative">
         <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-[#fdfcfb] to-white"></div>
