@@ -12,6 +12,7 @@ import SignUpPage from './pages/SignUpPage.tsx';
 import ClientDashboardPage from './pages/ClientDashboardPage.tsx';
 import AdminClientsPage from './pages/AdminClientsPage.tsx';
 import AdminClientDetailPage from './pages/AdminClientDetailPage.tsx';
+import ClientDocumentsPage from './pages/ClientDocumentsPage.tsx';
 import { Language } from './translations.ts';
 
 const App: React.FC = () => {
@@ -36,6 +37,7 @@ const App: React.FC = () => {
             <Route path="/ai/chat" element={<AiChatPage lang={lang} />} />
             <Route path="/signup" element={<SignUpPage />} />
             <Route path="/client" element={<ClientDashboardPage lang={lang} />} />
+            <Route path="/client/documents" element={<ClientDocumentsPage />} />
             <Route path="/admin/clients" element={<AdminClientsPage />} />
             <Route path="/admin/clients/:email" element={<AdminClientDetailPage />} />
           </Routes>
