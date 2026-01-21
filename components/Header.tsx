@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { LOGO_COMPONENT } from '../constants.tsx';
 import { Language, translations } from '../translations.ts';
 
@@ -15,6 +15,7 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
   const [showKeypad, setShowKeypad] = useState(false);
   const [pin, setPin] = useState('');
   const PASSCODE = '0412';
+  const navigate = useNavigate();
   const t = translations[lang];
 
   useEffect(() => {
@@ -156,7 +157,7 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
                       if (next === PASSCODE) {
                         setShowKeypad(false);
                         setPin('');
-                        onAdminClick();
+                        navigate('/admin/clients');
                       } else {
                         setTimeout(() => setPin(''), 300);
                       }
@@ -172,15 +173,15 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
                 onClick={() => {
                   const next = (pin + '0').slice(0,4);
                   setPin(next);
-                  if (next.length === 4) {
-                    if (next === PASSCODE) {
-                      setShowKeypad(false);
-                      setPin('');
-                      onAdminClick();
-                    } else {
-                      setTimeout(() => setPin(''), 300);
+                    if (next.length === 4) {
+                      if (next === PASSCODE) {
+                        setShowKeypad(false);
+                        setPin('');
+                        navigate('/admin/clients');
+                      } else {
+                        setTimeout(() => setPin(''), 300);
+                      }
                     }
-                  }
                 }}
               >0</button>
               <button
