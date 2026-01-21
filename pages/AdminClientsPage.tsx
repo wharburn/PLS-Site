@@ -15,22 +15,21 @@ const AdminClientsPage: React.FC = () => {
     try {
       const raw = localStorage.getItem('pls_clients');
       const parsed = raw ? JSON.parse(raw) : {};
-      if (!raw || Object.keys(parsed).length === 0) {
-        const seedEmail = 'andrew.person@example.com';
-        parsed[seedEmail] = {
-          profile: {
-            name: 'Andrew Person',
-            email: seedEmail,
-            address: '30 Harrington Gardens, London SW7 4TL',
-            phone: '+44 7304 021 303 / 0207 555 1234',
-          },
-          docs: [],
-          audit: [],
-          updatedAt: new Date().toISOString(),
-          password: 'PLSwebsite',
-        };
-        localStorage.setItem('pls_clients', JSON.stringify(parsed));
-      }
+      const seedEmail = 'andrew.person@example.com';
+      const existing = parsed[seedEmail] || {};
+      parsed[seedEmail] = {
+        profile: {
+          name: 'Andrew Person',
+          email: seedEmail,
+          address: '30 Harrington Gardens, London SW7 4TL',
+          phone: '+44 7304 021 303 / 0207 555 1234',
+        },
+        docs: existing.docs || [],
+        audit: existing.audit || [],
+        updatedAt: existing.updatedAt || new Date().toISOString(),
+        password: existing.password || 'PLSwebsite',
+      };
+      localStorage.setItem('pls_clients', JSON.stringify(parsed));
       setClients(parsed);
     } catch (err) {
       console.error('Failed to load clients', err);
