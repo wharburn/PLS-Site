@@ -34,11 +34,11 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-xs">Compliance</h4>
             <ul className="space-y-4 text-sm">
-              <li>HMRC ID: IWII8EFHKXM8</li>
-              <li>ICO Reg: ZA221652</li>
-              <li>SRA Foreign Lawyer: 666982</li>
+              <li>HMRC Agent</li>
+              <li>ICO Registered</li>
+              <li>Solicitors (Partner Firms)</li>
               <li>ACCA Certified Accountant</li>
-              <li>Chartered Linguist Profile: 44886</li>
+              <li>Chartered Linguist</li>
             </ul>
           </div>
 
