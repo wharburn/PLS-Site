@@ -27,6 +27,7 @@ const AdminClientsPage: React.FC = () => {
           docs: [],
           audit: [],
           updatedAt: new Date().toISOString(),
+          password: 'PLSwebsite',
         };
         localStorage.setItem('pls_clients', JSON.stringify(parsed));
       }
