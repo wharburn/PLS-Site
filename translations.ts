@@ -20,7 +20,7 @@ export const translations = {
       schedule: 'Schedule Consultation',
       partners: 'Solicitors (Partner Firms)',
       exp: 'Years Experience',
-      compliance: 'Regulatory Compliance',
+      compliance: 'HMRC Agent · ICO Registered',
     },
     services: {
       title: 'Our Core Expertise',
@@ -152,7 +152,7 @@ export const translations = {
       schedule: 'Agendar Consulta',
       partners: 'Sociedades de Advogados Parceiras',
       exp: 'Anos de Experiência',
-      compliance: 'Conformidade Regulatória',
+       compliance: 'Agente HMRC · Registado ICO',
     },
     services: {
       title: 'A Nossa Especialização',
