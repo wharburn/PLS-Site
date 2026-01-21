@@ -12,13 +12,7 @@ interface HomePageProps {
   lang: Language;
 }
 
-interface AiLink {
-  label: string;
-  to: string;
-  desc: string;
-}
-
-const ClientPortalSection: React.FC<{ lang: Language; aiLinks: AiLink[] }> = ({ lang, aiLinks }) => {
+const ClientPortalSection: React.FC<{ lang: Language }> = ({ lang }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
@@ -63,20 +57,6 @@ const ClientPortalSection: React.FC<{ lang: Language; aiLinks: AiLink[] }> = ({ 
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 pt-4">
-            {aiLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full text-sm font-semibold transition-all"
-              >
-                <span>{link.label}</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </Link>
-            ))}
-          </div>
         </div>
 
         <div className="bg-white text-slate-900 rounded-3xl shadow-2xl p-8 border border-amber-100">
@@ -136,13 +116,6 @@ const HomePage: React.FC<HomePageProps> = ({ lang }) => {
   const services = getTranslatedServices(lang);
   const partners = getTranslatedPartners(lang);
 
-  const aiLinks: AiLink[] = [
-    { label: 'AI Legal Guidance', to: '/ai/legal', desc: t.aiLegal.title },
-    { label: 'Document Translation', to: '/ai/translation', desc: t.documentTranslation.title },
-    { label: 'Image Analysis', to: '/ai/analysis', desc: t.imageAnalysis.title },
-    { label: 'NoVo AI Chat', to: '/ai/chat', desc: 'Talk with the NoVo concierge' },
-  ];
-
   return (
     <>
       <section id="home">
@@ -190,7 +163,7 @@ const HomePage: React.FC<HomePageProps> = ({ lang }) => {
         <AboutPedro lang={lang} />
       </section>
 
-      <ClientPortalSection lang={lang} aiLinks={aiLinks} />
+      <ClientPortalSection lang={lang} />
 
       <section id="contact" className="py-32 bg-slate-900 text-white">
         <ContactSection lang={lang} />
