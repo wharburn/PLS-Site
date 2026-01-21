@@ -35,10 +35,10 @@ type UploadedDoc = {
 };
 
 const defaultProfile: Profile = {
-  name: 'Andrew Person',
-  email: 'andrew.person@example.com',
-  address: '30 Harrington Gardens, London SW7 4TL',
-  phone: '+44 7304 021 303 / 0207 555 1234',
+  name: '',
+  email: '',
+  address: '',
+  phone: '',
 };
 
 const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }) => {
