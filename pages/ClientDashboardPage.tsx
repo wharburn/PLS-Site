@@ -57,7 +57,9 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
 
   const portalEmail = useMemo(() => {
     try {
-      return localStorage.getItem('pls_portal_email') || (location.state as any)?.email || seedEmail;
+      return (
+        localStorage.getItem('pls_portal_email') || (location.state as any)?.email || seedEmail
+      );
     } catch {
       return seedEmail;
     }
@@ -241,7 +243,9 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
       <div className="bg-slate-50 py-20">
         <div className="max-w-3xl mx-auto px-6 text-center space-y-4">
           <h1 className="text-3xl font-bold text-slate-900">Portal access required</h1>
-          <p className="text-slate-600">Please sign in or create an account to view your client workspace.</p>
+          <p className="text-slate-600">
+            Please sign in or create an account to view your client workspace.
+          </p>
           <div className="flex gap-3 justify-center">
             <button
               className="px-6 py-3 bg-slate-900 text-amber-500 font-bold rounded-xl shadow hover:bg-slate-800"
@@ -263,34 +267,36 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
 
   return (
     <div className="bg-slate-50 py-14">
-      <div className="max-w-6xl mx-auto px-6 space-y-8">
-        <input
-          type="file"
-          ref={replaceInputRef}
-          className="hidden"
-          onChange={handleReplace}
-        />
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
+      <div className="max-w-6xl mx-auto px-6 space-y-6">
+        <input type="file" ref={replaceInputRef} className="hidden" onChange={handleReplace} />
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-[0.25em]">
               Client Portal
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mt-3 font-serif italic">Your secure workspace</h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mt-3 font-serif italic">
+              Your secure workspace
+            </h1>
             <p className="text-slate-600 mt-3 max-w-2xl">
-              Manage your profile, upload identity and accounting documents, and view a full audit trail of changes.
+              Manage your profile, upload identity and accounting documents, and view a full audit
+              trail of changes.
             </p>
             <div className="text-sm text-slate-500 mt-2">Signed in as {portalEmail}</div>
           </div>
-          <div className="bg-white border border-amber-100 text-amber-700 px-4 py-3 rounded-xl text-sm font-bold">
-            Audit logging enabled
+          <div className="flex flex-col items-end gap-3">
+            <div className="bg-white border border-amber-100 text-amber-700 px-4 py-3 rounded-xl text-sm font-bold whitespace-nowrap">
+              Audit logging enabled
+            </div>
+            <button
+              onClick={() => navigate('/')}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
+            >
+              <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">
+                🏠
+              </span>
+              Back to website
+            </button>
           </div>
-          <button
-            onClick={() => navigate('/')}
-            className="ml-auto inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
-          >
-            <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">🏠</span>
-            Back to website
-          </button>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -299,7 +305,9 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
             <form className="space-y-5" onSubmit={saveProfile}>
               <div className="grid md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Name</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                    Name
+                  </label>
                   <input
                     type="text"
                     value={draft.name}
@@ -308,7 +316,9 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Email</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                    Email
+                  </label>
                   <input
                     type="email"
                     value={draft.email}
@@ -319,7 +329,9 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
               </div>
               <div className="grid md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Address</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                    Address
+                  </label>
                   <input
                     type="text"
                     value={draft.address}
@@ -328,7 +340,9 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Telephone</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                    Telephone
+                  </label>
                   <input
                     type="tel"
                     value={draft.phone}
@@ -358,7 +372,9 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
               {audit.map((entry) => (
                 <div key={entry.id} className="p-3 rounded-xl border border-slate-100 bg-slate-50">
                   <div className="text-xs font-bold text-slate-700">{entry.summary}</div>
-                  <div className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mt-1">{new Date(entry.timestamp).toLocaleString()}</div>
+                  <div className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mt-1">
+                    {new Date(entry.timestamp).toLocaleString()}
+                  </div>
                 </div>
               ))}
             </div>
@@ -368,7 +384,9 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">Documents</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">
+                Documents
+              </div>
               <div className="text-sm text-slate-500">Summary of your uploads.</div>
             </div>
             <Link
@@ -380,22 +398,34 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="p-4 border border-slate-100 rounded-2xl bg-slate-50">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">Identity</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">
+                Identity
+              </div>
               <div className="text-2xl font-bold text-slate-900">{identityDocs.length}</div>
               <div className="text-xs text-slate-500">Passport / Driver Licence</div>
             </div>
             <div className="p-4 border border-slate-100 rounded-2xl bg-slate-50">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700">Accounting</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700">
+                Accounting
+              </div>
               <div className="text-2xl font-bold text-slate-900">{accountingDocs.length}</div>
               <div className="text-xs text-slate-500">Bank, compliance, expenses, other</div>
             </div>
             <div className="p-4 border border-slate-100 rounded-2xl bg-slate-50">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700">Latest upload</div>
-              <div className="text-sm text-slate-900 font-bold truncate">{docs[0]?.name || '—'}</div>
-              <div className="text-[11px] text-slate-500">{docs[0] ? new Date(docs[0].timestamp).toLocaleString() : 'No documents yet'}</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700">
+                Latest upload
+              </div>
+              <div className="text-sm text-slate-900 font-bold truncate">
+                {docs[0]?.name || '—'}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                {docs[0] ? new Date(docs[0].timestamp).toLocaleString() : 'No documents yet'}
+              </div>
             </div>
             <div className="p-4 border border-slate-100 rounded-2xl bg-slate-50">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700">Audit entries</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700">
+                Audit entries
+              </div>
               <div className="text-2xl font-bold text-slate-900">{audit.length}</div>
               <div className="text-xs text-slate-500">Recent actions</div>
             </div>
@@ -405,14 +435,18 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
         <div className="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-slate-900">AI tools</h3>
-            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Client access only</div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
+              Client access only
+            </div>
           </div>
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
             <Link
               to="/ai/legal"
               className="p-4 border border-slate-100 rounded-xl hover:border-amber-200 hover:bg-amber-50/40 transition-colors shadow-sm"
             >
-              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">Legal</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">
+                Legal
+              </div>
               <div className="mt-2 font-bold text-slate-900">AI Legal Guidance</div>
               <div className="text-xs text-slate-500 mt-1">Grounded legal context for UK/PT.</div>
             </Link>
@@ -420,7 +454,9 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
               to="/ai/translation"
               className="p-4 border border-slate-100 rounded-xl hover:border-amber-200 hover:bg-amber-50/40 transition-colors shadow-sm"
             >
-              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">Linguistics</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">
+                Linguistics
+              </div>
               <div className="mt-2 font-bold text-slate-900">Document Translation</div>
               <div className="text-xs text-slate-500 mt-1">Certified-style EN↔PT translation.</div>
             </Link>
@@ -428,17 +464,25 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
               to="/ai/analysis"
               className="p-4 border border-slate-100 rounded-xl hover:border-amber-200 hover:bg-amber-50/40 transition-colors shadow-sm"
             >
-              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">Imaging</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">
+                Imaging
+              </div>
               <div className="mt-2 font-bold text-slate-900">Image Analysis</div>
-              <div className="text-xs text-slate-500 mt-1">Upload evidence for structured insight.</div>
+              <div className="text-xs text-slate-500 mt-1">
+                Upload evidence for structured insight.
+              </div>
             </Link>
             <Link
               to="/ai/chat"
               className="p-4 border border-slate-100 rounded-xl hover:border-amber-200 hover:bg-amber-50/40 transition-colors shadow-sm"
             >
-              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">Concierge</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">
+                Concierge
+              </div>
               <div className="mt-2 font-bold text-slate-900">NoVo AI Chat</div>
-              <div className="text-xs text-slate-500 mt-1">Route requests and get quick answers.</div>
+              <div className="text-xs text-slate-500 mt-1">
+                Route requests and get quick answers.
+              </div>
             </Link>
           </div>
         </div>
