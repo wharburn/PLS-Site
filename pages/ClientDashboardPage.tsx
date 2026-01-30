@@ -302,20 +302,23 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 relative">
               <h2 className="text-xl font-bold text-slate-900">Profile details</h2>
-              <div className="flex items-center gap-3">
+              <div
+                className="absolute left-1/2 transform -translate-x-1/2"
+                style={{ marginLeft: '-50px' }}
+              >
                 <div className="text-xs text-slate-500">
                   Signed in as <span className="font-semibold text-slate-900">{portalEmail}</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={saveProfile}
-                  className="px-6 py-3 bg-slate-900 text-amber-500 font-bold rounded-xl shadow hover:bg-slate-800 transition-all"
-                >
-                  Save changes
-                </button>
               </div>
+              <button
+                type="button"
+                onClick={saveProfile}
+                className="px-6 py-3 bg-slate-900 text-amber-500 font-bold rounded-xl shadow hover:bg-slate-800 transition-all"
+              >
+                Save changes
+              </button>
             </div>
             <form className="space-y-5">
               <div className="grid md:grid-cols-2 gap-5">
