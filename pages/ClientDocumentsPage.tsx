@@ -334,7 +334,9 @@ const ClientDocumentsPage: React.FC = () => {
                     Legal
                   </div>
                   <div className="mt-2 font-bold text-slate-900">AI Legal Guidance</div>
-                  <div className="text-xs text-slate-500 mt-1">Grounded legal context for UK/PT.</div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    Grounded legal context for UK/PT.
+                  </div>
                 </Link>
                 <Link
                   to="/ai/translation"
@@ -344,7 +346,9 @@ const ClientDocumentsPage: React.FC = () => {
                     Linguistics
                   </div>
                   <div className="mt-2 font-bold text-slate-900">Document Translation</div>
-                  <div className="text-xs text-slate-500 mt-1">Certified-style EN↔PT translation.</div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    Certified-style EN↔PT translation.
+                  </div>
                 </Link>
                 <Link
                   to="/ai/analysis"
@@ -380,7 +384,10 @@ const ClientDocumentsPage: React.FC = () => {
                   <div className="text-sm text-slate-400">No changes recorded yet.</div>
                 )}
                 {audit.map((entry) => (
-                  <div key={entry.id} className="p-3 rounded-xl border border-slate-100 bg-slate-50">
+                  <div
+                    key={entry.id}
+                    className="p-3 rounded-xl border border-slate-100 bg-slate-50"
+                  >
                     <div className="text-xs font-bold text-slate-700">{entry.summary}</div>
                     <div className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mt-1">
                       {new Date(entry.timestamp).toLocaleString()}
@@ -399,162 +406,34 @@ const ClientDocumentsPage: React.FC = () => {
               </div>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-1 gap-3">
-            {identityTypes.map((type) => {
-              const match = identityDocs.find((d) => d.docKind === type.key);
-              return (
-                <div
-                  key={type.key}
-                  className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2"
-                >
-                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
-                    {type.label}
+              {identityTypes.map((type) => {
+                const match = identityDocs.find((d) => d.docKind === type.key);
+                return (
+                  <div
+                    key={type.key}
+                    className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2"
+                  >
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
+                      {type.label}
+                      {match ? (
+                        <span className="text-green-600">Uploaded</span>
+                      ) : (
+                        <span className="text-slate-400">Missing</span>
+                      )}
+                    </div>
                     {match ? (
-                      <span className="text-green-600">Uploaded</span>
-                    ) : (
-                      <span className="text-slate-400">Missing</span>
-                    )}
-                  </div>
-                  {match ? (
-                    <>
-                      <a
-                        href={match.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="min-w-0 hover:text-amber-700 flex flex-col gap-2"
-                      >
-                        <div className="w-full aspect-[7/4] rounded-xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
-                          {match.isImage ? (
-                            <img
-                              src={match.url}
-                              alt={match.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="text-2xl">📄</div>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-sm font-bold text-slate-800 truncate">
-                            {match.name}
-                          </div>
-                          <div className="text-[11px] text-slate-400 truncate">
-                            {formatSize(match.size)} • {new Date(match.timestamp).toLocaleString()}
-                          </div>
-                        </div>
-                      </a>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={match.note}
-                          onChange={(e) => updateNote(match.id, e.target.value)}
-                          placeholder="Add a note"
-                          className="w-full text-[11px] text-slate-700 border border-slate-200 rounded px-2 py-1"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => triggerReplace(match)}
-                          className="text-[11px] font-bold text-amber-700 underline"
-                        >
-                          Reupload
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <label className="cursor-pointer">
-                      <div className="w-full aspect-[7/4] rounded-xl bg-white border-2 border-dashed border-slate-200 hover:border-amber-400 overflow-hidden flex flex-col items-center justify-center gap-2 transition-colors">
-                        <div className="text-3xl">📤</div>
-                        <div className="text-xs font-bold text-slate-600">Upload {type.label}</div>
-                      </div>
-                      <input
-                        type="file"
-                        className="hidden"
-                        multiple
-                        accept="image/*,.pdf"
-                        onChange={(e) => handleUpload('identity', e.target.files, type.key)}
-                      />
-                    </label>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-700">
-                Accounting documents
-              </div>
-              <div className="text-sm text-slate-500">
-                Upload statements, compliance docs, expenses.
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setViewMode(viewMode === 'list' ? 'thumbnail' : 'list')}
-                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
-                title={viewMode === 'list' ? 'Switch to thumbnail view' : 'Switch to list view'}
-              >
-                {viewMode === 'list' ? '🖼️ Thumbnails' : '📋 List'}
-              </button>
-              <select
-                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold"
-                value={accountingKind}
-                onChange={(e) => setAccountingKind(e.target.value as UploadedDoc['docKind'])}
-              >
-                {accountingTypes.map((t) => (
-                  <option key={t.key} value={t.key}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-              <label className="px-3 py-2 bg-slate-900 text-amber-500 rounded-lg text-sm font-semibold cursor-pointer border border-slate-800">
-                Upload
-                <input
-                  type="file"
-                  className="hidden"
-                  multiple
-                  onChange={(e) => handleUpload('accounting', e.target.files, accountingKind)}
-                />
-              </label>
-            </div>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {accountingTypes.map((type) => {
-              const matches = accountingDocs.filter((d) => d.docKind === type.key);
-              const filled = matches.length > 0;
-              return (
-                <div
-                  key={type.key}
-                  className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2"
-                >
-                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-slate-700">
-                    {type.label}
-                    {filled ? (
-                      <span className="text-green-600">{matches.length} file(s)</span>
-                    ) : (
-                      <span className="text-slate-400">Missing</span>
-                    )}
-                  </div>
-                  {filled ? (
-                    matches.map((doc) => (
-                      <div
-                        key={doc.id}
-                        className="border border-slate-100 rounded-lg p-2 bg-white flex flex-col gap-2"
-                      >
+                      <>
                         <a
-                          href={doc.url}
+                          href={match.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="min-w-0 hover:text-amber-700 flex flex-col gap-2"
                         >
-                          <div
-                            className={`rounded-lg bg-white border border-slate-100 overflow-hidden flex items-center justify-center ${viewMode === 'thumbnail' ? 'w-full aspect-[4/3]' : 'w-full aspect-[7/4]'}`}
-                          >
-                            {doc.isImage ? (
+                          <div className="w-full aspect-[7/4] rounded-xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
+                            {match.isImage ? (
                               <img
-                                src={doc.url}
-                                alt={doc.name}
+                                src={match.url}
+                                alt={match.name}
                                 className="w-full h-full object-cover"
                               />
                             ) : (
@@ -563,37 +442,169 @@ const ClientDocumentsPage: React.FC = () => {
                           </div>
                           <div className="min-w-0">
                             <div className="text-sm font-bold text-slate-800 truncate">
-                              {doc.name}
+                              {match.name}
                             </div>
                             <div className="text-[11px] text-slate-400 truncate">
-                              {formatSize(doc.size)} • {new Date(doc.timestamp).toLocaleString()}
+                              {formatSize(match.size)} •{' '}
+                              {new Date(match.timestamp).toLocaleString()}
                             </div>
                           </div>
                         </a>
                         <div className="flex items-center gap-2">
                           <input
                             type="text"
-                            value={doc.note}
-                            onChange={(e) => updateNote(doc.id, e.target.value)}
+                            value={match.note}
+                            onChange={(e) => updateNote(match.id, e.target.value)}
                             placeholder="Add a note"
                             className="w-full text-[11px] text-slate-700 border border-slate-200 rounded px-2 py-1"
                           />
                           <button
                             type="button"
-                            onClick={() => triggerReplace(doc)}
-                            className="text-[11px] font-bold text-slate-800 underline"
+                            onClick={() => triggerReplace(match)}
+                            className="text-[11px] font-bold text-amber-700 underline"
                           >
                             Reupload
                           </button>
                         </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-xs text-slate-500">No files uploaded yet.</div>
-                  )}
+                      </>
+                    ) : (
+                      <label className="cursor-pointer">
+                        <div className="w-full aspect-[7/4] rounded-xl bg-white border-2 border-dashed border-slate-200 hover:border-amber-400 overflow-hidden flex flex-col items-center justify-center gap-2 transition-colors">
+                          <div className="text-3xl">📤</div>
+                          <div className="text-xs font-bold text-slate-600">
+                            Upload {type.label}
+                          </div>
+                        </div>
+                        <input
+                          type="file"
+                          className="hidden"
+                          multiple
+                          accept="image/*,.pdf"
+                          onChange={(e) => handleUpload('identity', e.target.files, type.key)}
+                        />
+                      </label>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-700">
+                  Accounting documents
                 </div>
-              );
-            })}
+                <div className="text-sm text-slate-500">
+                  Upload statements, compliance docs, expenses.
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setViewMode(viewMode === 'list' ? 'thumbnail' : 'list')}
+                  className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
+                  title={viewMode === 'list' ? 'Switch to thumbnail view' : 'Switch to list view'}
+                >
+                  {viewMode === 'list' ? '🖼️ Thumbnails' : '📋 List'}
+                </button>
+                <select
+                  className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold"
+                  value={accountingKind}
+                  onChange={(e) => setAccountingKind(e.target.value as UploadedDoc['docKind'])}
+                >
+                  {accountingTypes.map((t) => (
+                    <option key={t.key} value={t.key}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+                <label className="px-3 py-2 bg-slate-900 text-amber-500 rounded-lg text-sm font-semibold cursor-pointer border border-slate-800">
+                  Upload
+                  <input
+                    type="file"
+                    className="hidden"
+                    multiple
+                    onChange={(e) => handleUpload('accounting', e.target.files, accountingKind)}
+                  />
+                </label>
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {accountingTypes.map((type) => {
+                const matches = accountingDocs.filter((d) => d.docKind === type.key);
+                const filled = matches.length > 0;
+                return (
+                  <div
+                    key={type.key}
+                    className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2"
+                  >
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-slate-700">
+                      {type.label}
+                      {filled ? (
+                        <span className="text-green-600">{matches.length} file(s)</span>
+                      ) : (
+                        <span className="text-slate-400">Missing</span>
+                      )}
+                    </div>
+                    {filled ? (
+                      matches.map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="border border-slate-100 rounded-lg p-2 bg-white flex flex-col gap-2"
+                        >
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="min-w-0 hover:text-amber-700 flex flex-col gap-2"
+                          >
+                            <div
+                              className={`rounded-lg bg-white border border-slate-100 overflow-hidden flex items-center justify-center ${viewMode === 'thumbnail' ? 'w-full aspect-[4/3]' : 'w-full aspect-[7/4]'}`}
+                            >
+                              {doc.isImage ? (
+                                <img
+                                  src={doc.url}
+                                  alt={doc.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="text-2xl">📄</div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-bold text-slate-800 truncate">
+                                {doc.name}
+                              </div>
+                              <div className="text-[11px] text-slate-400 truncate">
+                                {formatSize(doc.size)} • {new Date(doc.timestamp).toLocaleString()}
+                              </div>
+                            </div>
+                          </a>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={doc.note}
+                              onChange={(e) => updateNote(doc.id, e.target.value)}
+                              placeholder="Add a note"
+                              className="w-full text-[11px] text-slate-700 border border-slate-200 rounded px-2 py-1"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => triggerReplace(doc)}
+                              className="text-[11px] font-bold text-slate-800 underline"
+                            >
+                              Reupload
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-xs text-slate-500">No files uploaded yet.</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
