@@ -44,6 +44,8 @@ const ClientDocumentsPage: React.FC = () => {
 
   useMemo(() => {
     if (!portalEmail) return;
+
+    // Load from localStorage first (for metadata)
     try {
       const raw = localStorage.getItem('pls_clients');
       const parsed = raw ? JSON.parse(raw) : {};
@@ -54,8 +56,40 @@ const ClientDocumentsPage: React.FC = () => {
         setProfile(rec.profile || null);
       }
     } catch (err) {
-      console.error('Load client documents failed', err);
+      console.error('Load client documents from localStorage failed', err);
     }
+
+    // Also fetch from backend to ensure we have all files
+    fetch(`/api/files/${portalEmail}`)
+      .then((res) => res.json())
+      .then((files) => {
+        if (files && files.length > 0) {
+          console.log('Loaded files from backend:', files);
+          // Merge with existing docs from localStorage
+          setDocs((prev) => {
+            const existingNames = new Set(prev.map((d) => d.name));
+            const newDocs = files
+              .filter((f: any) => !existingNames.has(f.name))
+              .map((f: any) => ({
+                id: crypto.randomUUID(),
+                name: f.name,
+                size: f.size,
+                category: 'accounting' as const,
+                timestamp: new Date().toISOString(),
+                url: f.url,
+                data: f.url,
+                mime: '',
+                isImage: false,
+                docKind: 'other' as const,
+                note: '',
+              }));
+            return [...prev, ...newDocs];
+          });
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load files from backend', err);
+      });
   }, [portalEmail]);
 
   const persist = (nextDocs: UploadedDoc[], nextAudit = audit) => {
@@ -79,7 +113,10 @@ const ClientDocumentsPage: React.FC = () => {
 
   const logChange = (summary: string) => {
     setAudit((prev) => {
-      const next = [{ id: crypto.randomUUID(), summary, timestamp: new Date().toISOString() }, ...prev];
+      const next = [
+        { id: crypto.randomUUID(), summary, timestamp: new Date().toISOString() },
+        ...prev,
+      ];
       persist(docs, next);
       return next;
     });
@@ -106,32 +143,62 @@ const ClientDocumentsPage: React.FC = () => {
   ) => {
     if (!fileList || fileList.length === 0) return;
     const files = Array.from(fileList);
-    const dataUrls = await Promise.all(files.map((f) => readFileAsDataURL(f)));
-    const newEntries: UploadedDoc[] = files.map((file, idx) => {
-      const data = dataUrls[idx];
-      return {
-        id: crypto.randomUUID(),
-        name: file.name,
-        size: file.size,
-        category,
-        timestamp: new Date().toISOString(),
-        url: data,
-        data,
-        mime: file.type,
-        isImage: file.type.startsWith('image/'),
-        docKind,
-        note: '',
-      };
+
+    // Upload files to backend instead of storing in localStorage
+    const uploadPromises = files.map(async (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('clientId', portalEmail);
+      formData.append('filename', file.name);
+
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Upload failed');
+        }
+
+        const result = await response.json();
+
+        return {
+          id: crypto.randomUUID(),
+          name: file.name,
+          size: file.size,
+          category,
+          timestamp: new Date().toISOString(),
+          url: result.url,
+          data: result.url, // Store URL instead of base64
+          mime: file.type,
+          isImage: file.type.startsWith('image/'),
+          docKind,
+          note: '',
+        };
+      } catch (err) {
+        console.error('Upload failed for', file.name, err);
+        return null;
+      }
     });
+
+    const uploadedEntries = (await Promise.all(uploadPromises)).filter(
+      (e): e is UploadedDoc => e !== null
+    );
+
+    if (uploadedEntries.length === 0) {
+      alert('All uploads failed. Please try again.');
+      return;
+    }
 
     setDocs((prev) => {
       let next = [...prev];
       if (category === 'identity') {
         next = next.filter((d) => !(d.category === 'identity' && d.docKind === docKind));
       }
-      next = [...newEntries, ...next];
+      next = [...uploadedEntries, ...next];
       persist(next, audit);
-      logChange(`Uploaded ${newEntries.length} file(s) to ${category} (${docKind})`);
+      logChange(`Uploaded ${uploadedEntries.length} file(s) to ${category} (${docKind})`);
       return next;
     });
   };
@@ -153,26 +220,50 @@ const ClientDocumentsPage: React.FC = () => {
     const files = e.target.files;
     if (!files || files.length === 0 || !replaceTarget) return;
     const file = files[0];
-    const data = await readFileAsDataURL(file);
-    const updated: UploadedDoc = {
-      ...replaceTarget,
-      id: crypto.randomUUID(),
-      name: file.name,
-      size: file.size,
-      timestamp: new Date().toISOString(),
-      url: data,
-      data,
-      mime: file.type,
-      isImage: file.type.startsWith('image/'),
-    };
-    setDocs((prev) => {
-      const next = prev.map((d) => (d.id === replaceTarget.id ? updated : d));
-      persist(next, audit);
-      logChange(`Replaced ${replaceTarget.name} with ${file.name}`);
-      return next;
-    });
-    setReplaceTarget(null);
-    e.target.value = '';
+
+    // Upload to backend instead of storing in localStorage
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('clientId', portalEmail);
+    formData.append('filename', file.name);
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+
+      const updated: UploadedDoc = {
+        ...replaceTarget,
+        id: crypto.randomUUID(),
+        name: file.name,
+        size: file.size,
+        timestamp: new Date().toISOString(),
+        url: result.url,
+        data: result.url, // Store URL instead of base64
+        mime: file.type,
+        isImage: file.type.startsWith('image/'),
+      };
+
+      setDocs((prev) => {
+        const next = prev.map((d) => (d.id === replaceTarget.id ? updated : d));
+        persist(next, audit);
+        logChange(`Replaced ${replaceTarget.name} with ${file.name}`);
+        return next;
+      });
+      setReplaceTarget(null);
+      e.target.value = '';
+    } catch (err) {
+      console.error('Replace upload failed', err);
+      alert('Failed to upload replacement file. Please try again.');
+      e.target.value = '';
+    }
   };
 
   React.useEffect(() => {
@@ -220,8 +311,12 @@ const ClientDocumentsPage: React.FC = () => {
 
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <div className="text-xs font-bold uppercase tracking-[0.25em] text-amber-600">Client documents</div>
-            <h1 className="text-3xl font-bold text-slate-900 mt-2">{profile?.name || portalEmail}</h1>
+            <div className="text-xs font-bold uppercase tracking-[0.25em] text-amber-600">
+              Client documents
+            </div>
+            <h1 className="text-3xl font-bold text-slate-900 mt-2">
+              {profile?.name || portalEmail}
+            </h1>
             <div className="text-slate-600 text-sm">{portalEmail}</div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -229,14 +324,18 @@ const ClientDocumentsPage: React.FC = () => {
               onClick={() => navigate('/client')}
               className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
             >
-              <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">←</span>
+              <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">
+                ←
+              </span>
               Back to portal
             </button>
             <button
               onClick={() => navigate('/')}
               className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
             >
-              <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">🏠</span>
+              <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">
+                🏠
+              </span>
               Back to website
             </button>
           </div>
@@ -245,7 +344,9 @@ const ClientDocumentsPage: React.FC = () => {
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">Identity documents</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">
+                Identity documents
+              </div>
               <div className="text-sm text-slate-500">Upload passport or driver licence.</div>
             </div>
             <div className="flex items-center gap-2">
@@ -273,7 +374,10 @@ const ClientDocumentsPage: React.FC = () => {
             {identityTypes.map((type) => {
               const match = identityDocs.find((d) => d.docKind === type.key);
               return (
-                <div key={type.key} className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2">
+                <div
+                  key={type.key}
+                  className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2"
+                >
                   <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
                     {type.label}
                     {match ? (
@@ -292,14 +396,24 @@ const ClientDocumentsPage: React.FC = () => {
                       >
                         <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
                           {match.isImage ? (
-                            <img src={match.url} alt={match.name} className="w-full h-full object-cover" />
+                            <img
+                              src={match.url}
+                              alt={match.name}
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
-                            <div className="text-[10px] font-bold text-slate-400 uppercase">File</div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase">
+                              File
+                            </div>
                           )}
                         </div>
                         <div className="min-w-0">
-                          <div className="text-sm font-bold text-slate-800 truncate">{match.name}</div>
-                          <div className="text-[11px] text-slate-400 truncate">{formatSize(match.size)} • {new Date(match.timestamp).toLocaleString()}</div>
+                          <div className="text-sm font-bold text-slate-800 truncate">
+                            {match.name}
+                          </div>
+                          <div className="text-[11px] text-slate-400 truncate">
+                            {formatSize(match.size)} • {new Date(match.timestamp).toLocaleString()}
+                          </div>
                         </div>
                       </a>
                       <div className="flex items-center gap-2">
@@ -329,8 +443,12 @@ const ClientDocumentsPage: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-700">Accounting documents</div>
-              <div className="text-sm text-slate-500">Upload statements, compliance docs, expenses.</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-700">
+                Accounting documents
+              </div>
+              <div className="text-sm text-slate-500">
+                Upload statements, compliance docs, expenses.
+              </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <select
@@ -339,7 +457,9 @@ const ClientDocumentsPage: React.FC = () => {
                 onChange={(e) => setAccountingKind(e.target.value as UploadedDoc['docKind'])}
               >
                 {accountingTypes.map((t) => (
-                  <option key={t.key} value={t.key}>{t.label}</option>
+                  <option key={t.key} value={t.key}>
+                    {t.label}
+                  </option>
                 ))}
               </select>
               <label className="px-3 py-2 bg-slate-900 text-amber-500 rounded-lg text-sm font-semibold cursor-pointer border border-slate-800">
@@ -358,14 +478,24 @@ const ClientDocumentsPage: React.FC = () => {
               const matches = accountingDocs.filter((d) => d.docKind === type.key);
               const filled = matches.length > 0;
               return (
-                <div key={type.key} className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2">
+                <div
+                  key={type.key}
+                  className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2"
+                >
                   <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-slate-700">
                     {type.label}
-                    {filled ? <span className="text-green-600">{matches.length} file(s)</span> : <span className="text-slate-400">Missing</span>}
+                    {filled ? (
+                      <span className="text-green-600">{matches.length} file(s)</span>
+                    ) : (
+                      <span className="text-slate-400">Missing</span>
+                    )}
                   </div>
                   {filled ? (
                     matches.map((doc) => (
-                      <div key={doc.id} className="border border-slate-100 rounded-lg p-2 bg-white flex flex-col gap-2">
+                      <div
+                        key={doc.id}
+                        className="border border-slate-100 rounded-lg p-2 bg-white flex flex-col gap-2"
+                      >
                         <a
                           href={doc.url}
                           target="_blank"
@@ -374,14 +504,24 @@ const ClientDocumentsPage: React.FC = () => {
                         >
                           <div className="w-10 h-10 rounded-lg bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
                             {doc.isImage ? (
-                              <img src={doc.url} alt={doc.name} className="w-full h-full object-cover" />
+                              <img
+                                src={doc.url}
+                                alt={doc.name}
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
-                              <div className="text-[10px] font-bold text-slate-400 uppercase">File</div>
+                              <div className="text-[10px] font-bold text-slate-400 uppercase">
+                                File
+                              </div>
                             )}
                           </div>
                           <div className="min-w-0">
-                            <div className="text-sm font-bold text-slate-800 truncate">{doc.name}</div>
-                            <div className="text-[11px] text-slate-400 truncate">{formatSize(doc.size)} • {new Date(doc.timestamp).toLocaleString()}</div>
+                            <div className="text-sm font-bold text-slate-800 truncate">
+                              {doc.name}
+                            </div>
+                            <div className="text-[11px] text-slate-400 truncate">
+                              {formatSize(doc.size)} • {new Date(doc.timestamp).toLocaleString()}
+                            </div>
                           </div>
                         </a>
                         <div className="flex items-center gap-2">
@@ -414,11 +554,15 @@ const ClientDocumentsPage: React.FC = () => {
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
           <h3 className="text-lg font-bold text-slate-900 mb-3">Audit history</h3>
           <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-            {audit.length === 0 && <div className="text-sm text-slate-400">No changes recorded.</div>}
+            {audit.length === 0 && (
+              <div className="text-sm text-slate-400">No changes recorded.</div>
+            )}
             {audit.map((entry) => (
               <div key={entry.id} className="p-3 rounded-xl border border-slate-100 bg-slate-50">
                 <div className="text-xs font-bold text-slate-700">{entry.summary}</div>
-                <div className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mt-1">{new Date(entry.timestamp).toLocaleString()}</div>
+                <div className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mt-1">
+                  {new Date(entry.timestamp).toLocaleString()}
+                </div>
               </div>
             ))}
           </div>
