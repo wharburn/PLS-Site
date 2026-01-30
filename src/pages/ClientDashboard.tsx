@@ -1,55 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import FileUpload from '../components/FileUpload';
-import DocumentViewer from '../components/DocumentViewer';
 
 export const ClientDashboard: React.FC = () => {
   const [clients, setClients] = useState<any[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
   const [selectedClient, setSelectedClient] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  const [selectedDoc, setSelectedDoc] = useState<any>(null);
-
-  useEffect(() => {
-    // Don't auto-load - wait for user to interact
-    setLoading(false);
-  }, []);
+  const [loading, setLoading] = useState(false);
 
   const loadData = async () => {
+    setLoading(true);
     try {
-      // Timeout after 10 seconds
-      const timeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 10000)
-      );
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('*')
+        .limit(20);
 
-      // Load clients
-      const clientPromise = Promise.race([
-        supabase
-          .from('clients')
-          .select('*')
-          .limit(10),
-        timeout
-      ]);
-
-      const { data: clientData } = await clientPromise as any;
       setClients(clientData || []);
 
-      // Load documents (limit to 20 for performance)
-      const docPromise = Promise.race([
-        supabase
-          .from('documents')
-          .select('id,filename,client_id,file_size,uploaded_at')
-          .order('uploaded_at', { ascending: false })
-          .limit(20),
-        timeout
-      ]);
+      const { data: docData } = await supabase
+        .from('documents')
+        .select('*')
+        .limit(30);
 
-      const { data: docData } = await docPromise as any;
       setDocuments(docData || []);
     } catch (err) {
-      console.error('Error loading data:', err);
-      setClients([]);
-      setDocuments([]);
+      console.error('Error:', err);
     } finally {
       setLoading(false);
     }
@@ -65,157 +40,127 @@ export const ClientDashboard: React.FC = () => {
 
       <div className="dashboard-grid">
         <div className="card">
-          <h3>📋 Total Clients</h3>
+          <h3>📋 Clients Loaded</h3>
           <p className="stat">{clients.length}</p>
         </div>
         <div className="card">
-          <h3>📄 Total Documents</h3>
+          <h3>📄 Documents Loaded</h3>
           <p className="stat">{documents.length}</p>
         </div>
       </div>
 
       <div className="section">
-        <h2>Clients</h2>
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <div>
-            <select
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-              className="select"
-            >
-              <option value="">All Clients</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.client_name} ({c.email})
-                </option>
-              ))}
-            </select>
-
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Client Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Status</th>
-                  <th>City</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(selectedClient
-                  ? clients.filter((c) => c.id === selectedClient)
-                  : clients.slice(0, 20)
-                ).map((client) => (
-                  <tr key={client.id}>
-                    <td>{client.client_name}</td>
-                    <td>{client.email}</td>
-                    <td>{client.phone || '-'}</td>
-                    <td>
-                      <span className={`status ${client.status}`}>
-                        {client.status}
-                      </span>
-                    </td>
-                    <td>{client.city || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <button onClick={loadData} disabled={loading} className="btn-primary">
+          {loading ? '⏳ Loading...' : '🔄 Load Data'}
+        </button>
       </div>
 
-      <div className="section">
-        <h2>Documents</h2>
-        {selectedClient && <FileUpload clientId={selectedClient} onUploadSuccess={loadData} />}
-
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Filename</th>
-              <th>Client</th>
-              <th>Size</th>
-              <th>Uploaded</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredDocs.map((doc) => (
-              <tr key={doc.id}>
-                <td>{doc.filename}</td>
-                <td>
-                  {clients.find((c) => c.id === doc.client_id)?.client_name || 'Unknown'}
-                </td>
-                <td>{doc.file_size ? `${(doc.file_size / 1024).toFixed(2)}KB` : '-'}</td>
-                <td>{new Date(doc.uploaded_at).toLocaleDateString()}</td>
-                <td>
-                  <button
-                    className="btn-view"
-                    onClick={() => setSelectedDoc(doc)}
-                  >
-                    👁️ View
-                  </button>
-                </td>
-              </tr>
+      {clients.length > 0 && (
+        <div className="section">
+          <h2>Select Client</h2>
+          <select
+            value={selectedClient}
+            onChange={(e) => setSelectedClient(e.target.value)}
+            className="select"
+          >
+            <option value="">All Clients</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.client_name}
+              </option>
             ))}
-          </tbody>
-        </table>
+          </select>
+        </div>
+      )}
 
-        {selectedDoc && (
-          <DocumentViewer
-            document={selectedDoc}
-            onClose={() => setSelectedDoc(null)}
-          />
-        )}
-      </div>
+      {documents.length > 0 && (
+        <div className="section">
+          <h2>Documents ({filteredDocs.length})</h2>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Filename</th>
+                <th>Size</th>
+                <th>Uploaded</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredDocs.map((doc) => (
+                <tr key={doc.id}>
+                  <td>{doc.filename}</td>
+                  <td>{(doc.file_size / 1024).toFixed(1)} KB</td>
+                  <td>{new Date(doc.uploaded_at).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <style>{`
         .dashboard {
           padding: 20px;
+          max-width: 1200px;
         }
 
         .dashboard-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          grid-template-columns: 1fr 1fr;
           gap: 20px;
           margin: 20px 0;
         }
 
         .card {
+          background: #f5f5f5;
           padding: 20px;
-          background: #f9f9f9;
           border-radius: 8px;
-          border: 1px solid #ddd;
+          text-align: center;
         }
 
         .stat {
           font-size: 32px;
-          font-weight: 700;
+          font-weight: bold;
           color: #0057FF;
-          margin: 10px 0 0 0;
+          margin: 10px 0;
         }
 
         .section {
           margin: 30px 0;
         }
 
+        .btn-primary {
+          padding: 12px 24px;
+          background: #0057FF;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 16px;
+        }
+
+        .btn-primary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
         .select {
-          padding: 10px;
+          padding: 12px;
           border: 1px solid #ddd;
           border-radius: 4px;
-          margin-bottom: 20px;
           width: 100%;
-          max-width: 500px;
+          max-width: 400px;
+          font-size: 16px;
         }
 
         .data-table {
           width: 100%;
           border-collapse: collapse;
-          margin-top: 20px;
+          margin-top: 15px;
         }
 
-        .data-table th, .data-table td {
+        .data-table th,
+        .data-table td {
           padding: 12px;
           text-align: left;
           border-bottom: 1px solid #ddd;
@@ -224,37 +169,6 @@ export const ClientDashboard: React.FC = () => {
         .data-table th {
           background: #f5f5f5;
           font-weight: 600;
-        }
-
-        .status {
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-
-        .status.active {
-          background: #d1fae5;
-          color: #065f46;
-        }
-
-        .status.pending {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        .btn-view {
-          padding: 6px 12px;
-          background: #0057FF;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 12px;
-        }
-
-        .btn-view:hover {
-          background: #0045cc;
         }
       `}</style>
     </div>
