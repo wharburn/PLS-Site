@@ -448,12 +448,14 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
           </div>
 
           <div className="space-y-3">
-            <Link
-              to="/client/documents"
-              className="block px-6 py-3 bg-slate-900 text-amber-500 font-bold rounded-xl shadow hover:bg-slate-800 transition-all text-center"
-            >
-              Manage documents
-            </Link>
+            <div className="flex justify-end">
+              <Link
+                to="/client/documents"
+                className="px-6 py-3 bg-slate-900 text-amber-500 font-bold rounded-xl shadow hover:bg-slate-800 transition-all"
+              >
+                Manage documents
+              </Link>
+            </div>
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
               <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">
                 Identity
