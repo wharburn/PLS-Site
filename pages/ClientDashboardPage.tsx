@@ -443,55 +443,50 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
               </form>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">
                     Documents
                   </div>
                   <div className="text-sm text-slate-500">Summary of your uploads.</div>
                 </div>
-                <Link
-                  to="/client/documents"
-                  className="px-6 py-3 bg-slate-900 text-amber-500 font-bold rounded-xl shadow hover:bg-slate-800 transition-all"
-                >
-                  Manage documents
-                </Link>
               </div>
-              <div className="space-y-3">
-                <div className="p-4 border border-slate-100 rounded-2xl bg-slate-50">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">
-                    Identity
-                  </div>
-                  <div className="text-2xl font-bold text-slate-900">{identityDocs.length}</div>
-                  <div className="text-xs text-slate-500">Passport / Driver Licence</div>
-                </div>
-                <div className="p-4 border border-slate-100 rounded-2xl bg-slate-50">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700">
-                    Accounting
-                  </div>
-                  <div className="text-2xl font-bold text-slate-900">{accountingDocs.length}</div>
-                  <div className="text-xs text-slate-500">Bank, compliance, expenses, other</div>
-                </div>
-                <div className="p-4 border border-slate-100 rounded-2xl bg-slate-50">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700">
-                    Latest upload
-                  </div>
-                  <div className="text-sm text-slate-900 font-bold truncate">
-                    {docs[0]?.name || '—'}
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    {docs[0] ? new Date(docs[0].timestamp).toLocaleString() : 'No documents yet'}
-                  </div>
-                </div>
-                <div className="p-4 border border-slate-100 rounded-2xl bg-slate-50">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700">
-                    Audit entries
-                  </div>
-                  <div className="text-2xl font-bold text-slate-900">{audit.length}</div>
-                  <div className="text-xs text-slate-500">Recent actions</div>
-                </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">
+                Identity
               </div>
+              <div className="text-2xl font-bold text-slate-900">{identityDocs.length}</div>
+              <div className="text-xs text-slate-500">Passport / Driver Licence</div>
+            </div>
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700">
+                Accounting
+              </div>
+              <div className="text-2xl font-bold text-slate-900">{accountingDocs.length}</div>
+              <div className="text-xs text-slate-500">Bank, compliance, expenses, other</div>
+            </div>
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700">
+                Latest upload
+              </div>
+              <div className="text-sm text-slate-900 font-bold truncate">
+                {docs[0]?.name || '—'}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                {docs[0] ? new Date(docs[0].timestamp).toLocaleString() : 'No documents yet'}
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700">
+                Audit entries
+              </div>
+              <div className="text-2xl font-bold text-slate-900">{audit.length}</div>
+              <div className="text-xs text-slate-500">Recent actions</div>
             </div>
           </div>
         </div>
