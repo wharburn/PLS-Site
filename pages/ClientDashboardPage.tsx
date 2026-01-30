@@ -267,7 +267,7 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
 
   return (
     <div className="bg-slate-50 py-8">
-      <div className="max-w-6xl mx-auto px-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-6 space-y-4">
         <input type="file" ref={replaceInputRef} className="hidden" onChange={handleReplace} />
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
