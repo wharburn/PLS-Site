@@ -6,6 +6,8 @@ export const ClientPortalPage: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState('');
 
   // Sample PDFs available
   const samplePDFs = [
@@ -51,6 +53,40 @@ export const ClientPortalPage: React.FC = () => {
     setSelectedClient(client);
     // For demo: assign sample PDFs to all clients
     setDocuments(samplePDFs);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedClient) return;
+
+    setUploading(true);
+    setUploadMessage('Uploading...');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('clientId', selectedClient.id);
+      formData.append('filename', file.name);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        setUploadMessage(`✅ Uploaded: ${file.name}`);
+        // Add to documents list
+        setDocuments([...documents, { name: file.name, type: '📄', size: `${(file.size / 1024).toFixed(1)} KB` }]);
+        // Reset input
+        if (e.target) e.target.value = '';
+      } else {
+        setUploadMessage('❌ Upload failed');
+      }
+    } catch (err) {
+      setUploadMessage('❌ Error uploading');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -129,6 +165,29 @@ export const ClientPortalPage: React.FC = () => {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* Upload Section */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow p-8 mb-8">
+                  <h3 className="text-xl font-bold text-slate-900 mb-6">Upload New Document</h3>
+                  
+                  <div className="flex gap-4 items-center">
+                    <input
+                      type="file"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                      className="flex-grow px-4 py-2 border border-slate-300 rounded-lg"
+                    />
+                    <button disabled={uploading} className="px-4 py-2 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 disabled:opacity-50">
+                      {uploading ? 'Uploading...' : 'Upload'}
+                    </button>
+                  </div>
+                  
+                  {uploadMessage && (
+                    <p className={`mt-3 text-sm ${uploadMessage.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>
+                      {uploadMessage}
+                    </p>
+                  )}
                 </div>
 
                 {/* Documents */}
