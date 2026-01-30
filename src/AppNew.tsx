@@ -17,6 +17,7 @@ import AdminDashboard from '../components/AdminDashboard';
 import HomePage from '../pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignUpPageNew from './pages/SignUpPageNew';
+import AdminLoginPage from './pages/AdminLoginPage';
 
 // AI pages (public but enhanced when logged in)
 import AiLegalPage from '../pages/AiLegalPage';
@@ -70,6 +71,7 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<HomePage lang={lang} />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPageNew />} />
+          <Route path="/admin" element={<AdminLoginPage />} />
           
           {/* AI routes (public) */}
           <Route path="/ai/legal" element={<AiLegalPage lang={lang} />} />
