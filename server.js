@@ -1,15 +1,107 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
+import multer from 'multer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Serve static files
+const STORAGE_PATH = '/mnt/data/uploads';
+
+// Ensure storage directories exist
+function ensureDir(dirPath) {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+}
+
+ensureDir(STORAGE_PATH);
+
+// Setup multer for file uploads
+const upload = multer({
+  dest: STORAGE_PATH,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const clientId = req.body.clientId;
+      const clientDir = path.join(STORAGE_PATH, clientId);
+      ensureDir(clientDir);
+      cb(null, clientDir);
+    },
+    filename: (req, file, cb) => {
+      const filename = req.body.filename || `${Date.now()}_${file.originalname}`;
+      cb(null, filename);
+    }
+  })
+});
+
+// Middleware
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(STORAGE_PATH)); // Serve uploaded files
+
+// API Routes
+
+// Upload file
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  const url = `/uploads/${req.body.clientId}/${req.body.filename}`;
+  res.json({
+    success: true,
+    url: url,
+    filename: req.body.filename
+  });
+});
+
+// List files for client
+app.get('/api/files', (req, res) => {
+  try {
+    const clientId = req.query.clientId;
+    const clientDir = path.join(STORAGE_PATH, clientId);
+
+    if (!fs.existsSync(clientDir)) {
+      return res.json([]);
+    }
+
+    const files = fs.readdirSync(clientDir).map(filename => ({
+      name: filename,
+      url: `/uploads/${clientId}/${filename}`,
+      size: fs.statSync(path.join(clientDir, filename)).size
+    }));
+
+    res.json(files);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete file
+app.post('/api/delete', (req, res) => {
+  try {
+    const filepath = path.join(STORAGE_PATH, req.body.filepath);
+    
+    // Security check - ensure path is within STORAGE_PATH
+    if (!filepath.startsWith(STORAGE_PATH)) {
+      return res.status(403).json({ error: 'Invalid path' });
+    }
+
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'File not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // SPA routing - fallback to index.html
 app.use((req, res) => {
@@ -18,5 +110,5 @@ app.use((req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
-  console.log(`✅ Access: http://77.42.79.205:${PORT}/`);
+  console.log(`✅ Storage: ${STORAGE_PATH}`);
 });
