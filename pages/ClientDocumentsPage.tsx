@@ -291,7 +291,7 @@ const ClientDocumentsPage: React.FC = () => {
               </span>
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              Upload and manage your identity and accounting documents securely.
+              Upload all your documents to be held securely here
             </p>
           </div>
           <div className="flex flex-col items-end gap-2" style={{ marginTop: '-60px' }}>
