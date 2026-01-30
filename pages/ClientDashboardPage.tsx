@@ -10,7 +10,10 @@ type Profile = {
   name: string;
   email: string;
   address: string;
+  address2: string;
+  city: string;
   phone: string;
+  mobile: string;
 };
 
 type AuditEntry = {
@@ -38,8 +41,11 @@ const seedEmail = 'andrew.person@example.com';
 const seedProfile: Profile = {
   name: 'Andrew Person',
   email: seedEmail,
-  address: '30 Harrington Gardens, London SW7 4TL',
-  phone: '+44 7304 021 303 / 0207 555 1234',
+  address: '30 Harrington Gardens',
+  address2: 'London',
+  city: 'SW7 4TL',
+  phone: '+44 0207 555 1234',
+  mobile: '+44 7304 021 303',
 };
 
 const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }) => {
@@ -269,41 +275,45 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
     <div className="bg-slate-50 py-8">
       <div className="max-w-6xl mx-auto px-6 space-y-4">
         <input type="file" ref={replaceInputRef} className="hidden" onChange={handleReplace} />
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
+        <div className="flex items-center justify-between gap-4">
+          <div>
             <div className="text-xs font-bold uppercase tracking-[0.25em] text-amber-600">
               Client Portal
             </div>
-            <h1 className="text-3xl font-bold text-slate-900 mt-2">
-              {profile?.name || portalEmail}
-            </h1>
+            <h1 className="text-3xl font-bold text-slate-900 mt-1">Your secure workspace</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Manage your profile, upload identity and accounting documents, and view a full audit
+              trail of changes.
+            </p>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="bg-white border border-slate-200 shadow-sm px-4 py-3 rounded-xl">
-              <div className="text-xs text-slate-500 mb-1">Signed in as</div>
-              <div className="text-sm font-semibold text-slate-900">{portalEmail}</div>
-              <div className="text-xs text-amber-700 font-bold mt-2 flex items-center gap-1">
-                <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
-                Audit logging enabled
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
-            >
-              <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">
-                🏠
-              </span>
-              Back to website
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
+          >
+            <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">
+              🏠
+            </span>
+            Back to website
+          </button>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Profile details</h2>
-            <form className="space-y-5" onSubmit={saveProfile}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Profile details</h2>
+                <div className="text-xs text-slate-500 mt-1">Signed in as {portalEmail}</div>
+              </div>
+              <button
+                type="button"
+                onClick={saveProfile}
+                className="px-6 py-3 bg-slate-900 text-amber-500 font-bold rounded-xl shadow hover:bg-slate-800 transition-all"
+              >
+                Save changes
+              </button>
+            </div>
+            <form className="space-y-5">
               <div className="grid md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
@@ -331,7 +341,7 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
               <div className="grid md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                    Address
+                    Address Line 1
                   </label>
                   <input
                     type="text"
@@ -352,14 +362,40 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
                   />
                 </div>
               </div>
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-slate-900 text-amber-500 font-bold rounded-xl shadow hover:bg-slate-800 transition-all"
-                >
-                  Save changes
-                </button>
-                {saving && <span className="text-slate-500 text-sm self-center">Saved.</span>}
+              <div className="grid md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                    Address Line 2
+                  </label>
+                  <input
+                    type="text"
+                    value={draft.address2}
+                    onChange={(e) => setDraft({ ...draft, address2: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                    Mobile
+                  </label>
+                  <input
+                    type="tel"
+                    value={draft.mobile}
+                    onChange={(e) => setDraft({ ...draft, mobile: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  City and Postcode
+                </label>
+                <input
+                  type="text"
+                  value={draft.city}
+                  onChange={(e) => setDraft({ ...draft, city: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                />
               </div>
             </form>
           </div>
