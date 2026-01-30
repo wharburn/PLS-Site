@@ -12,24 +12,16 @@ const AdminClientDetailPage = () => {
       <div className="mb-12">
         <h2 className="text-xl font-bold mb-6">Identity Documents</h2>
         <div className="grid grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-lg border border-slate-200 shadow">
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🛂</div>
-              <div>
-                <h3 className="font-bold text-lg">Passport</h3>
-                <p className="text-sm text-slate-600">Identity verification</p>
-              </div>
-            </div>
+          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow text-center hover:shadow-lg transition">
+            <div className="text-8xl mb-4">🛂</div>
+            <h3 className="font-bold text-xl mb-2">Passport</h3>
+            <p className="text-sm text-slate-600">Identity verification</p>
           </div>
           
-          <div className="bg-white p-6 rounded-lg border border-slate-200 shadow">
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🪪</div>
-              <div>
-                <h3 className="font-bold text-lg">Driver's License</h3>
-                <p className="text-sm text-slate-600">Driving credentials</p>
-              </div>
-            </div>
+          <div className="bg-white p-8 rounded-lg border border-slate-200 shadow text-center hover:shadow-lg transition">
+            <div className="text-8xl mb-4">🪪</div>
+            <h3 className="font-bold text-xl mb-2">Driver's License</h3>
+            <p className="text-sm text-slate-600">Driving credentials</p>
           </div>
         </div>
       </div>
