@@ -5,13 +5,13 @@
 
 import React, { useState } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider } from './contexts/AuthContext';
 
 // Layout components
-import Header from '../components/Header';
-import Footer from '../components/Footer';
 import AdminDashboard from '../components/AdminDashboard';
+import Footer from '../components/Footer';
+import Header from '../components/Header';
 
 // Public pages
 import HomePage from '../pages/HomePage';
@@ -19,18 +19,19 @@ import LoginPage from './pages/LoginPage';
 import SignUpPageNew from './pages/SignUpPageNew';
 
 // AI pages (public but enhanced when logged in)
-import AiLegalPage from '../pages/AiLegalPage';
-import AiTranslationPage from '../pages/AiTranslationPage';
 import AiAnalysisPage from '../pages/AiAnalysisPage';
 import AiChatPage from '../pages/AiChatPage';
+import AiLegalPage from '../pages/AiLegalPage';
+import AiTranslationPage from '../pages/AiTranslationPage';
 
 // Protected client pages
 import ClientDashboardPage from '../pages/ClientDashboardPage';
 import ClientDocumentsPage from '../pages/ClientDocumentsPage';
 
 // Protected admin pages
-import AdminClientsPage from '../pages/AdminClientsPage';
 import AdminClientDetailPage from '../pages/AdminClientDetailPage';
+import AdminClientsPage from '../pages/AdminClientsPage';
+import AdminLoginPage from './pages/AdminLoginPage';
 
 import { Language } from '../translations';
 
@@ -69,8 +70,9 @@ const AppContent: React.FC = () => {
           {/* Public routes */}
           <Route path="/" element={<HomePage lang={lang} />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/signup" element={<SignUpPageNew />} />
-          
+
           {/* AI routes (public) */}
           <Route path="/ai/legal" element={<AiLegalPage lang={lang} />} />
           <Route path="/ai/translation" element={<AiTranslationPage lang={lang} />} />

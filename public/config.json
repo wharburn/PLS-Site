@@ -1,7 +1,6 @@
 {
   "supabase": {
-    "url": "https://vbyxkoirudagvgnxgndk.supabase.co",
-    "anonKey": "sb_publishable_QlC57S0HWeQxk0iayit6-Q_W4yJK1xk",
-    "serviceKey": "sb_secret_Zvyh_KpVQVe_RLId8M-mWQ_f0l2gyPF"
+    "url": "https://ivrnnzubplghzizefmjw.supabase.co",
+    "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cm5uenVicGxnaHppemVmbWp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzgwMjYsImV4cCI6MjA4NDkxNDAyNn0.XSzX8a7d8qJTrvuiiD1KEhGG2v1lKKybkv3R24_yZz4"
   }
 }

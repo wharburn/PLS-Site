@@ -6,37 +6,40 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 
-// Production API Keys - VERIFIED WORKING
-// DO NOT CHANGE - These are hardcoded as primary, env vars as secondary
-const supabaseUrl = 'https://vbyxkoirudagvgnxgndk.supabase.co';
-const supabaseAnonKey = 'sb_publishable_ZAZMZMzaE_6FGjSGkft3AA_AfphWP0i';
+// Get Supabase credentials from environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables');
+  console.error('❌ CRITICAL: Missing Supabase environment variables');
+  console.error('Required: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+  console.error('Check your Vercel environment variables or .env file');
 }
 
-export const supabase = createClient<Database>(
-  supabaseUrl || '',
-  supabaseAnonKey || '',
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
-  }
-);
+export const supabase = createClient<Database>(supabaseUrl || '', supabaseAnonKey || '', {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
 
 // Helper to get current user
 export const getCurrentUser = async () => {
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
   if (error) throw error;
   return user;
 };
 
 // Helper to get current session
 export const getCurrentSession = async () => {
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
   if (error) throw error;
   return session;
 };

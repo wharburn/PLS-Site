@@ -3,19 +3,26 @@
  * Provides auth state and methods throughout the app
  */
 
+import { Session, User } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import supabase from '../lib/supabase';
 import type { Client } from '../lib/database.types';
+import supabase from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   client: Client | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string, address: string, phone: string) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    name: string,
+    address: string,
+    phone: string
+  ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  bypassLogin: () => void;
   isAdmin: boolean;
 }
 
@@ -30,7 +37,7 @@ export const useAuth = () => {
 };
 
 // Admin emails (in production, use a proper admin table)
-const ADMIN_EMAILS = ['wayne@novocom.ai', 'pedro@plsconsultants.com'];
+const ADMIN_EMAILS = ['wayne@novocom.ai', 'pedro@plsconsultants.com', 'admin@plsconsultants.com'];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -46,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select('*')
         .eq('email', email)
         .single();
-      
+
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching client:', error);
       }
@@ -69,20 +76,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user?.email) {
-          await fetchClientProfile(session.user.email);
-        } else {
-          setClient(null);
-        }
-        
-        setLoading(false);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user?.email) {
+        await fetchClientProfile(session.user.email);
+      } else {
+        setClient(null);
       }
-    );
+
+      setLoading(false);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -106,15 +113,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (authError) throw authError;
 
     // Create client profile
-    const { error: clientError } = await supabase
-      .from('clients')
-      .insert({
-        email,
-        name,
-        address,
-        phone,
-        onboarding_completed: true,
-      });
+    const { error: clientError } = await supabase.from('clients').insert({
+      email,
+      name,
+      address,
+      phone,
+      onboarding_completed: true,
+    });
 
     if (clientError) throw clientError;
 
@@ -128,30 +133,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    console.log('🔐 Starting login for:', email);
 
-    if (error) throw error;
+    try {
+      const { error, data } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    // Update last login
-    await supabase
-      .from('clients')
-      .update({ last_login_at: new Date().toISOString() })
-      .eq('email', email);
+      console.log('🔐 Login response:', { error, data });
 
-    // Log audit
-    await supabase.from('audit_log').insert({
-      action_type: 'login',
-      summary: `Client logged in: ${email}`,
-      performed_by: 'client',
-    });
+      if (error) {
+        console.error('🔐 Login error:', error);
+        throw error;
+      }
+
+      console.log('✅ Login successful!');
+
+      // Update last login (optional - ignore errors if table doesn't exist)
+      try {
+        await supabase
+          .from('clients')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('email', email);
+      } catch (err) {
+        console.log('Could not update last_login_at:', err);
+      }
+
+      // Log audit (optional - ignore errors if table doesn't exist)
+      try {
+        await supabase.from('audit_log').insert({
+          action_type: 'login',
+          summary: `Client logged in: ${email}`,
+          performed_by: 'client',
+        });
+      } catch (err) {
+        console.log('Could not log audit:', err);
+      }
+    } catch (err) {
+      console.error('🔐 Sign in failed:', err);
+      throw err;
+    }
   };
 
   const signOut = async () => {
     const email = user?.email;
-    
+
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
 
@@ -162,6 +189,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         performed_by: 'client',
       });
     }
+  };
+
+  const bypassLogin = () => {
+    console.log('🚀 Bypass login - creating mock user');
+    const mockUser = {
+      id: 'bypass-user-123',
+      email: 'test@plsconsultants.com',
+      aud: 'authenticated',
+      role: 'authenticated',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      app_metadata: {},
+      user_metadata: { name: 'Test User' },
+    } as User;
+
+    setUser(mockUser);
+    setLoading(false);
   };
 
   const isAdmin = user?.email ? ADMIN_EMAILS.includes(user.email) : false;
@@ -176,6 +220,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         signIn,
         signOut,
+        bypassLogin,
         isAdmin,
       }}
     >

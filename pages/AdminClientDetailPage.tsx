@@ -69,19 +69,29 @@ const AdminClientDetailPage: React.FC = () => {
   const missingAccounting = requiredAccounting.filter((r) => !hasDocKind(accountingDocs, r.key));
 
   const suggestions: string[] = [];
-  if (missingIdentity.length) suggestions.push(`Request ID: ${missingIdentity.map((m) => m.label).join(', ')}`);
-  if (missingAccounting.length) suggestions.push(`Request accounting docs: ${missingAccounting.map((m) => m.label).join(', ')}`);
-  if (!missingAccounting.length) suggestions.push('Accounting pack appears complete; proceed with reconciliation.');
-  if (accountingDocs.length && !missingAccounting.length) suggestions.push('Run anomaly checks on uploaded statements/expenses.');
+  if (missingIdentity.length)
+    suggestions.push(`Request ID: ${missingIdentity.map((m) => m.label).join(', ')}`);
+  if (missingAccounting.length)
+    suggestions.push(
+      `Request accounting docs: ${missingAccounting.map((m) => m.label).join(', ')}`
+    );
+  if (!missingAccounting.length)
+    suggestions.push('Accounting pack appears complete; proceed with reconciliation.');
+  if (accountingDocs.length && !missingAccounting.length)
+    suggestions.push('Run anomaly checks on uploaded statements/expenses.');
   if (!identityDocs.length) suggestions.push('ID missing; obtain before filing or onboarding.');
 
   return (
-    <div className="bg-slate-50 py-14">
+    <div className="bg-slate-50 py-14 pt-[0.25rem]">
       <div className="max-w-6xl mx-auto px-6 space-y-8">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="space-y-1">
-            <div className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Admin view</div>
-            <h1 className="text-3xl font-bold text-slate-900 mt-1">{client.profile.name || email}</h1>
+            <div className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
+              Admin view
+            </div>
+            <h1 className="text-3xl font-bold text-slate-900 mt-1">
+              {client.profile.name || email}
+            </h1>
             <div className="text-slate-600 text-sm">{client.profile.email}</div>
             <div className="text-slate-500 text-sm whitespace-pre-line">
               {client.profile.address.replace(/,\s*/g, ',\n')}
@@ -89,13 +99,17 @@ const AdminClientDetailPage: React.FC = () => {
             <div className="text-slate-500 text-sm whitespace-pre-line">
               {client.profile.phone.replace(/\s*\/\s*/g, '\n')}
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">Updated {new Date(client.updatedAt).toLocaleString()}</div>
+            <div className="text-[11px] text-slate-400 mt-1">
+              Updated {new Date(client.updatedAt).toLocaleString()}
+            </div>
           </div>
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
           >
-            <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">←</span>
+            <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">
+              ←
+            </span>
             Back
           </button>
         </div>
@@ -110,7 +124,12 @@ const AdminClientDetailPage: React.FC = () => {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {['Check missing docs','Draft reminder email','Summarize latest uploads','List required ID items'].map((s) => (
+            {[
+              'Check missing docs',
+              'Draft reminder email',
+              'Summarize latest uploads',
+              'List required ID items',
+            ].map((s) => (
               <button
                 key={s}
                 className="px-3 py-2 rounded-full border border-slate-200 text-xs font-semibold text-slate-700 hover:border-amber-300 hover:text-amber-700"
@@ -133,21 +152,41 @@ const AdminClientDetailPage: React.FC = () => {
             <h3 className="text-lg font-bold text-slate-900 mb-3">Documents</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
               {identityDocs.map((doc) => (
-                <a key={doc.id} href={doc.url} target="_blank" rel="noopener noreferrer" className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2 hover:border-amber-200 hover:bg-amber-50/40">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-600">{doc.docKind}</div>
+                <a
+                  key={doc.id}
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2 hover:border-amber-200 hover:bg-amber-50/40"
+                >
+                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-600">
+                    {doc.docKind}
+                  </div>
                   <div className="text-sm font-bold text-slate-800 truncate">{doc.name}</div>
                   <div className="text-xs text-slate-500 truncate">{doc.note || 'No note'}</div>
-                  <div className="text-[11px] text-slate-400">{new Date(doc.timestamp).toLocaleString()}</div>
+                  <div className="text-[11px] text-slate-400">
+                    {new Date(doc.timestamp).toLocaleString()}
+                  </div>
                 </a>
               ))}
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {accountingDocs.map((doc) => (
-                <a key={doc.id} href={doc.url} target="_blank" rel="noopener noreferrer" className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2 hover:border-slate-300 hover:bg-white">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-600">{doc.docKind}</div>
+                <a
+                  key={doc.id}
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2 hover:border-slate-300 hover:bg-white"
+                >
+                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-600">
+                    {doc.docKind}
+                  </div>
                   <div className="text-sm font-bold text-slate-800 truncate">{doc.name}</div>
                   <div className="text-xs text-slate-500 truncate">{doc.note || 'No note'}</div>
-                  <div className="text-[11px] text-slate-400">{new Date(doc.timestamp).toLocaleString()}</div>
+                  <div className="text-[11px] text-slate-400">
+                    {new Date(doc.timestamp).toLocaleString()}
+                  </div>
                 </a>
               ))}
             </div>
@@ -156,11 +195,15 @@ const AdminClientDetailPage: React.FC = () => {
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
             <h3 className="text-lg font-bold text-slate-900 mb-3">Audit history</h3>
             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-              {client.audit?.length === 0 && <div className="text-sm text-slate-400">No changes recorded.</div>}
+              {client.audit?.length === 0 && (
+                <div className="text-sm text-slate-400">No changes recorded.</div>
+              )}
               {client.audit?.map((entry) => (
                 <div key={entry.id} className="p-3 rounded-xl border border-slate-100 bg-slate-50">
                   <div className="text-xs font-bold text-slate-700">{entry.summary}</div>
-                  <div className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mt-1">{new Date(entry.timestamp).toLocaleString()}</div>
+                  <div className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mt-1">
+                    {new Date(entry.timestamp).toLocaleString()}
+                  </div>
                 </div>
               ))}
             </div>
@@ -176,24 +219,47 @@ const AdminClientDetailPage: React.FC = () => {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-              <div className="text-[10px] uppercase font-black tracking-[0.25em] text-amber-600">ID docs</div>
+              <div className="text-[10px] uppercase font-black tracking-[0.25em] text-amber-600">
+                ID docs
+              </div>
               <div className="text-sm text-slate-800">{identityDocs.length} uploaded</div>
-              <div className="text-xs text-slate-500">Missing: {missingIdentity.length ? missingIdentity.map((m) => m.label).join(', ') : 'None'}</div>
+              <div className="text-xs text-slate-500">
+                Missing:{' '}
+                {missingIdentity.length ? missingIdentity.map((m) => m.label).join(', ') : 'None'}
+              </div>
             </div>
             <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-              <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-700">Accounting</div>
+              <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-700">
+                Accounting
+              </div>
               <div className="text-sm text-slate-800">{accountingDocs.length} uploaded</div>
-              <div className="text-xs text-slate-500">Missing: {missingAccounting.length ? missingAccounting.map((m) => m.label).join(', ') : 'None'}</div>
+              <div className="text-xs text-slate-500">
+                Missing:{' '}
+                {missingAccounting.length
+                  ? missingAccounting.map((m) => m.label).join(', ')
+                  : 'None'}
+              </div>
             </div>
             <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-              <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-700">Latest</div>
+              <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-700">
+                Latest
+              </div>
               <div className="text-sm text-slate-800 truncate">{client.docs?.[0]?.name || '—'}</div>
-              <div className="text-[11px] text-slate-500">{client.docs?.[0] ? new Date(client.docs[0].timestamp).toLocaleString() : 'No docs yet'}</div>
+              <div className="text-[11px] text-slate-500">
+                {client.docs?.[0]
+                  ? new Date(client.docs[0].timestamp).toLocaleString()
+                  : 'No docs yet'}
+              </div>
             </div>
             <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-              <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-700">Audit</div>
+              <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-700">
+                Audit
+              </div>
               <div className="text-sm text-slate-800">{client.audit?.length || 0} entries</div>
-              <div className="text-xs text-slate-500">Latest: {client.audit?.[0] ? new Date(client.audit[0].timestamp).toLocaleString() : '—'}</div>
+              <div className="text-xs text-slate-500">
+                Latest:{' '}
+                {client.audit?.[0] ? new Date(client.audit[0].timestamp).toLocaleString() : '—'}
+              </div>
             </div>
           </div>
           <div className="space-y-2 text-sm text-slate-700">
