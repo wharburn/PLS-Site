@@ -6,8 +6,9 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Use new v2 API keys - hardcoded as fallback
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ivrnnzubplghzizefmjw.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_QlC57S0HWeQxk0iayit6-Q_W4yJK1xk';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables');
