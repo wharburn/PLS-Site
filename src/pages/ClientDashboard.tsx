@@ -16,24 +16,39 @@ export const ClientDashboard: React.FC = () => {
 
   const loadData = async () => {
     try {
-      // Load clients
-      const { data: clientData } = await supabase
-        .from('clients')
-        .select('*')
-        .limit(100);
+      // Timeout after 10 seconds
+      const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 10000)
+      );
 
+      // Load clients
+      const clientPromise = Promise.race([
+        supabase
+          .from('clients')
+          .select('*')
+          .limit(10),
+        timeout
+      ]);
+
+      const { data: clientData } = await clientPromise as any;
       setClients(clientData || []);
 
-      // Load documents (limit to 50 for performance)
-      const { data: docData } = await supabase
-        .from('documents')
-        .select('*')
-        .order('uploaded_at', { ascending: false })
-        .limit(50);
+      // Load documents (limit to 20 for performance)
+      const docPromise = Promise.race([
+        supabase
+          .from('documents')
+          .select('id,filename,client_id,file_size,uploaded_at')
+          .order('uploaded_at', { ascending: false })
+          .limit(20),
+        timeout
+      ]);
 
+      const { data: docData } = await docPromise as any;
       setDocuments(docData || []);
     } catch (err) {
       console.error('Error loading data:', err);
+      setClients([]);
+      setDocuments([]);
     } finally {
       setLoading(false);
     }
