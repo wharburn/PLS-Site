@@ -281,11 +281,15 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
               Manage your profile, upload identity and accounting documents, and view a full audit
               trail of changes.
             </p>
-            <div className="text-sm text-slate-500 mt-2">Signed in as {portalEmail}</div>
           </div>
-          <div className="flex flex-col items-end gap-3">
-            <div className="bg-white border border-amber-100 text-amber-700 px-4 py-3 rounded-xl text-sm font-bold whitespace-nowrap">
-              Audit logging enabled
+          <div className="flex flex-col items-end gap-2">
+            <div className="bg-white border border-slate-200 shadow-sm px-4 py-3 rounded-xl">
+              <div className="text-xs text-slate-500 mb-1">Signed in as</div>
+              <div className="text-sm font-semibold text-slate-900">{portalEmail}</div>
+              <div className="text-xs text-amber-700 font-bold mt-2 flex items-center gap-1">
+                <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                Audit logging enabled
+              </div>
             </div>
             <button
               onClick={() => navigate('/')}
