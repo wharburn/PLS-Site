@@ -327,34 +327,14 @@ const ClientDocumentsPage: React.FC = () => {
               </div>
               <div className="text-sm text-slate-500">Upload passport or driver licence.</div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setViewMode(viewMode === 'list' ? 'thumbnail' : 'list')}
-                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
-                title={viewMode === 'list' ? 'Switch to thumbnail view' : 'Switch to list view'}
-              >
-                {viewMode === 'list' ? '🖼️ Thumbnails' : '📋 List'}
-              </button>
-              <select
-                className="px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold"
-                value={identityKind}
-                onChange={(e) => setIdentityKind(e.target.value as UploadedDoc['docKind'])}
-              >
-                <option value="passport">Passport</option>
-                <option value="driver_license">Driver Licence</option>
-              </select>
-              <label className="px-3 py-2 bg-amber-50 text-amber-700 rounded-lg text-sm font-semibold cursor-pointer border border-amber-100">
-                Upload
-                <input
-                  type="file"
-                  className="hidden"
-                  multiple
-                  accept="image/*,.pdf"
-                  onChange={(e) => handleUpload('identity', e.target.files, identityKind)}
-                />
-              </label>
-            </div>
+            <button
+              type="button"
+              onClick={() => setViewMode(viewMode === 'list' ? 'thumbnail' : 'list')}
+              className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
+              title={viewMode === 'list' ? 'Switch to thumbnail view' : 'Switch to list view'}
+            >
+              {viewMode === 'list' ? '🖼️ Thumbnails' : '📋 List'}
+            </button>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {identityTypes.map((type) => {
@@ -448,7 +428,19 @@ const ClientDocumentsPage: React.FC = () => {
                       </div>
                     </>
                   ) : (
-                    <div className="text-xs text-slate-500">No file uploaded yet.</div>
+                    <label className="cursor-pointer">
+                      <div className="w-full aspect-[4/3] rounded-xl bg-white border-2 border-dashed border-slate-200 hover:border-amber-400 overflow-hidden flex flex-col items-center justify-center gap-2 transition-colors">
+                        <div className="text-3xl">📤</div>
+                        <div className="text-xs font-bold text-slate-600">Upload {type.label}</div>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        multiple
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleUpload('identity', e.target.files, type.key)}
+                      />
+                    </label>
                   )}
                 </div>
               );
