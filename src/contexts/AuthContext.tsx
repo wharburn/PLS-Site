@@ -200,7 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('🚀 Bypass login - creating mock user');
     const mockUser = {
       id: 'bypass-user-123',
-      email: 'test@plsconsultants.com',
+      email: 'client@pls.com',
       aud: 'authenticated',
       role: 'authenticated',
       created_at: new Date().toISOString(),
