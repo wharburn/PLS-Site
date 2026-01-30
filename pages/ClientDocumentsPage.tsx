@@ -282,7 +282,7 @@ const ClientDocumentsPage: React.FC = () => {
       <div className="max-w-6xl mx-auto px-6 space-y-4">
         <input type="file" ref={replaceInputRef} className="hidden" onChange={handleReplace} />
 
-        <div className="flex items-start justify-between gap-4" style={{ paddingTop: '70px' }}>
+        <div className="flex items-start justify-between gap-4" style={{ paddingTop: '55px' }}>
           <div className="flex-1">
             <div className="text-xs font-bold uppercase tracking-[0.25em] text-amber-600">
               Client documents
