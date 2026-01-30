@@ -285,8 +285,10 @@ const ClientDocumentsPage: React.FC = () => {
         <div className="flex items-start justify-between gap-4" style={{ paddingTop: '55px' }}>
           <div className="flex-1">
             <h1 className="text-3xl font-bold" style={{ paddingBottom: '30px' }}>
-              <span className="text-amber-600">Client documents</span>{' '}
-              <span className="text-slate-900">{profile?.name || portalEmail}</span>
+              <span className="text-amber-600">Client documents</span>
+              <span style={{ marginLeft: '30px' }} className="text-slate-900">
+                {profile?.name || portalEmail}
+              </span>
             </h1>
           </div>
           <div className="flex flex-col items-end gap-2" style={{ marginTop: '-60px' }}>
