@@ -281,7 +281,7 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
         <input type="file" ref={replaceInputRef} className="hidden" onChange={handleReplace} />
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold" style={{ marginTop: '30px' }}>
+            <h1 className="text-3xl font-bold" style={{ paddingTop: '30px' }}>
               <span className="text-amber-600">Client Portal</span>{' '}
               <span className="text-slate-900">Your secure workspace</span>
             </h1>
@@ -361,12 +361,12 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                    Telephone
+                    Mobile
                   </label>
                   <input
                     type="tel"
-                    value={draft.phone}
-                    onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
+                    value={draft.mobile}
+                    onChange={(e) => setDraft({ ...draft, mobile: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
                   />
                 </div>
@@ -396,40 +396,29 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
                 </div>
               </div>
               <div className="grid md:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    value={draft.city}
-                    onChange={(e) => setDraft({ ...draft, city: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                    Postcode
-                  </label>
-                  <input
-                    type="text"
-                    value={draft.postcode}
-                    onChange={(e) => setDraft({ ...draft, postcode: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  />
-                </div>
-              </div>
-              <div className="grid md:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                    Mobile
-                  </label>
-                  <input
-                    type="tel"
-                    value={draft.mobile}
-                    onChange={(e) => setDraft({ ...draft, mobile: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  />
+                <div className="grid grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      value={draft.city}
+                      onChange={(e) => setDraft({ ...draft, city: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                      Postcode
+                    </label>
+                    <input
+                      type="text"
+                      value={draft.postcode}
+                      onChange={(e) => setDraft({ ...draft, postcode: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
