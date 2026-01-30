@@ -350,30 +350,6 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
               <div className="grid md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                    Work Email
-                  </label>
-                  <input
-                    type="email"
-                    value={draft.workEmail}
-                    onChange={(e) => setDraft({ ...draft, workEmail: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                    Mobile
-                  </label>
-                  <input
-                    type="tel"
-                    value={draft.mobile}
-                    onChange={(e) => setDraft({ ...draft, mobile: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  />
-                </div>
-              </div>
-              <div className="grid md:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
                     Address Line 1
                   </label>
                   <input
@@ -385,12 +361,36 @@ const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                    Work Email
+                  </label>
+                  <input
+                    type="email"
+                    value={draft.workEmail}
+                    onChange={(e) => setDraft({ ...draft, workEmail: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
                     Address Line 2
                   </label>
                   <input
                     type="text"
                     value={draft.address2}
                     onChange={(e) => setDraft({ ...draft, address2: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                    Mobile
+                  </label>
+                  <input
+                    type="tel"
+                    value={draft.mobile}
+                    onChange={(e) => setDraft({ ...draft, mobile: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
                   />
                 </div>
