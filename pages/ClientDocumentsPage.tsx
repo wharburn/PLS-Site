@@ -596,40 +596,6 @@ const ClientDocumentsPage: React.FC = () => {
             })}
           </div>
         </div>
-
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-900 mb-3">Audit history</h3>
-          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-            {audit.length === 0 && (
-              <div className="text-sm text-slate-400">No changes recorded.</div>
-            )}
-            {audit.map((entry) => (
-              <div key={entry.id} className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-                <div className="text-xs font-bold text-slate-700">{entry.summary}</div>
-                <div className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mt-1">
-                  {new Date(entry.timestamp).toLocaleString()}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-900 mb-3">Audit history</h3>
-          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-            {audit.length === 0 && (
-              <div className="text-sm text-slate-400">No changes recorded yet.</div>
-            )}
-            {audit.map((entry) => (
-              <div key={entry.id} className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-                <div className="text-xs font-bold text-slate-700">{entry.summary}</div>
-                <div className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mt-1">
-                  {new Date(entry.timestamp).toLocaleString()}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
