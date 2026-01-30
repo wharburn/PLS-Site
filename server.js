@@ -10,7 +10,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const STORAGE_PATH = '/mnt/data/uploads';
+// Use /mnt/data/uploads on Render, ./uploads locally
+const STORAGE_PATH =
+  process.env.NODE_ENV === 'production' ? '/mnt/data/uploads' : path.join(__dirname, 'uploads');
 
 // Ensure storage directories exist
 function ensureDir(dirPath) {
