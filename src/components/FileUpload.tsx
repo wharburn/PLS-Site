@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { uploadFile, listClientFiles } from '../lib/storage';
+import React, { useState, useEffect } from 'react';
 import '../styles/FileUpload.css';
 
 interface FileUploadProps {
@@ -12,6 +11,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({ clientId, onUploadSucces
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadFiles();
+  }, [clientId]);
+
+  const loadFiles = async () => {
+    try {
+      const response = await fetch(`/api/files?clientId=${clientId}`);
+      if (response.ok) {
+        const files = await response.json();
+        setUploadedFiles(files);
+      }
+    } catch (err) {
+      console.error('Error loading files:', err);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -30,85 +45,67 @@ export const FileUpload: React.FC<FileUploadProps> = ({ clientId, onUploadSucces
     setUploading(true);
     setMessage('Uploading...');
 
-    const result = await uploadFile(file, clientId);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('clientId', clientId);
+      formData.append('filename', file.name);
 
-    if (result.success) {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Upload failed');
+      }
+
+      const result = await response.json();
       setMessage(`✅ Uploaded: ${result.filename}`);
       setFile(null);
-      
+
       if (onUploadSuccess) {
         onUploadSuccess(result.filename || '');
       }
 
-      // Refresh file list
-      const files = await listClientFiles(clientId);
-      setUploadedFiles(files);
-    } else {
-      setMessage(`❌ ${result.error}`);
-    }
-
-    setUploading(false);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.currentTarget.classList.add('drag-over');
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.currentTarget.classList.remove('drag-over');
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove('drag-over');
-    const dropped = e.dataTransfer.files?.[0];
-    if (dropped) {
-      setFile(dropped);
+      // Reload files
+      await loadFiles();
+    } catch (err) {
+      setMessage(`❌ ${String(err)}`);
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
     <div className="file-upload-container">
-      <div
-        className="upload-zone"
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <input
-          type="file"
-          id="file-input"
-          onChange={handleFileSelect}
-          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-          style={{ display: 'none' }}
-        />
-        
-        <label htmlFor="file-input" className="upload-label">
-          {file ? (
-            <>
-              <span className="file-icon">📄</span>
-              <strong>{file.name}</strong>
-              <small>({(file.size / 1024 / 1024).toFixed(2)}MB)</small>
-            </>
-          ) : (
-            <>
-              <span className="upload-icon">⬆️</span>
-              <strong>Drag & drop or click to select</strong>
-              <small>PDF, JPG, PNG, DOC (Max 20MB)</small>
-            </>
-          )}
+      <div className="upload-zone">
+        <label className="upload-label">
+          <span className="upload-icon">📤</span>
+          <strong>Drop file here or click to select</strong>
+          <small>PDF, Image, or Document (Max 100MB)</small>
+          <input
+            type="file"
+            onChange={handleFileSelect}
+            style={{ display: 'none' }}
+          />
         </label>
       </div>
 
       {file && (
-        <button
-          className="btn-upload"
-          onClick={handleUpload}
-          disabled={uploading}
-        >
-          {uploading ? 'Uploading...' : 'Upload File'}
-        </button>
+        <div style={{ marginTop: '16px', padding: '12px', background: '#f0f4ff', borderRadius: '6px' }}>
+          <p style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '500' }}>
+            Selected: {file.name}
+          </p>
+          <button
+            onClick={handleUpload}
+            disabled={uploading}
+            className="btn-upload"
+          >
+            {uploading ? 'Uploading...' : 'Upload File'}
+          </button>
+        </div>
       )}
 
       {message && (
@@ -119,12 +116,23 @@ export const FileUpload: React.FC<FileUploadProps> = ({ clientId, onUploadSucces
 
       {uploadedFiles.length > 0 && (
         <div className="files-list">
-          <h3>📂 Uploaded Files</h3>
+          <h3>📁 Uploaded Files ({uploadedFiles.length})</h3>
           <ul>
-            {uploadedFiles.map((f, i) => (
-              <li key={i}>
-                <span>{f.name}</span>
-                <small>{new Date(f.updated_at).toLocaleDateString()}</small>
+            {uploadedFiles.map((file) => (
+              <li key={file.name}>
+                <span>
+                  <strong>{file.name}</strong>
+                  <br />
+                  <small>{(file.size / 1024).toFixed(1)} KB</small>
+                </span>
+                <a
+                  href={file.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#0057FF', textDecoration: 'none', fontWeight: '500' }}
+                >
+                  ↓
+                </a>
               </li>
             ))}
           </ul>

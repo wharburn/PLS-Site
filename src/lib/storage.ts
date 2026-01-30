@@ -1,12 +1,12 @@
 /**
- * Supabase Storage Handler - File uploads
+ * Render Persistent Disk Storage Handler - File uploads
+ * Saves files to /mnt/data/uploads/ on Render persistent disk
  */
 
 import { supabase } from './supabase';
 
-const BUCKET_NAME = 'statements';
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'image/*'];
+const STORAGE_PATH = '/mnt/data/uploads';
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 export interface UploadResult {
   success: boolean;
@@ -15,20 +15,7 @@ export interface UploadResult {
   filename?: string;
 }
 
-// Initialize bucket (create if doesn't exist)
-export const initializeBucket = async () => {
-  try {
-    await supabase.storage.createBucket(BUCKET_NAME, {
-      public: false,
-      allowedMimeTypes: ALLOWED_TYPES
-    });
-  } catch (error) {
-    // Bucket might already exist
-    console.log('Bucket initialization note:', error);
-  }
-};
-
-// Upload file to storage
+// Upload file to persistent disk
 export const uploadFile = async (
   file: File,
   clientId: string,
@@ -40,33 +27,36 @@ export const uploadFile = async (
     return { success: false, error: validation.error };
   }
 
-  // Generate filename
-  const timestamp = Date.now();
-  const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const filename = customFilename || `${clientId}_${timestamp}_${sanitized}`;
-  const filepath = `${clientId}/${filename}`;
-
   try {
-    // Upload to storage
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .upload(filepath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
+    // Generate filename
+    const timestamp = Date.now();
+    const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filename = customFilename || `${timestamp}_${sanitized}`;
+    const filepath = `${clientId}/${filename}`;
 
-    if (error) {
-      return { success: false, error: `Upload failed: ${error.message}` };
+    // Create a blob from the file
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // Send to backend for file saving
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('clientId', clientId);
+    formData.append('filename', filename);
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      return { success: false, error: 'Upload failed on server' };
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(filepath);
-
+    const result = await response.json();
+    
     return {
       success: true,
-      url: urlData?.publicUrl,
+      url: result.url,
       filename: filename
     };
   } catch (err) {
@@ -84,8 +74,10 @@ function validateFile(file: File): { valid: boolean; error?: string } {
     return { valid: false, error: `File too large. Max ${MAX_FILE_SIZE / 1024 / 1024}MB` };
   }
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
-    return { valid: false, error: 'File type not allowed. Use: PDF, JPG, PNG, DOC, DOCX' };
+  // Allow any common document/image type by extension
+  const allowed = /\.(pdf|jpg|jpeg|png|doc|docx|txt|gif|webp|xls|xlsx)$/i.test(file.name);
+  if (!allowed) {
+    return { valid: false, error: 'File type not allowed. Use: PDF, JPG, PNG, DOC, DOCX, TXT, XLS' };
   }
 
   return { valid: true };
@@ -94,17 +86,14 @@ function validateFile(file: File): { valid: boolean; error?: string } {
 // Delete file
 export const deleteFile = async (filepath: string): Promise<boolean> => {
   try {
-    const { error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .remove([filepath]);
-
-    if (error) {
-      console.error('Delete error:', error);
-      return false;
-    }
-    return true;
+    const response = await fetch('/api/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filepath })
+    });
+    return response.ok;
   } catch (err) {
-    console.error('Delete exception:', err);
+    console.error('Delete error:', err);
     return false;
   }
 };
@@ -112,12 +101,9 @@ export const deleteFile = async (filepath: string): Promise<boolean> => {
 // List files for client
 export const listClientFiles = async (clientId: string) => {
   try {
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .list(clientId);
-
-    if (error) return [];
-    return data || [];
+    const response = await fetch(`/api/files?clientId=${clientId}`);
+    if (!response.ok) return [];
+    return await response.json();
   } catch {
     return [];
   }
@@ -126,6 +112,5 @@ export const listClientFiles = async (clientId: string) => {
 export default {
   uploadFile,
   deleteFile,
-  listClientFiles,
-  initializeBucket
+  listClientFiles
 };

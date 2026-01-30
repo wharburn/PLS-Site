@@ -1,12 +1,9 @@
 services:
   - type: web
     name: pls-crm
-    runtime: static
+    runtime: node
     buildCommand: npm run build
-    staticPublishPath: ./dist
-    env:
-      - key: NODE_ENV
-        value: production
+    startCommand: npx serve -s dist -l $PORT
     routes:
       - type: rewrite
         source: /*
