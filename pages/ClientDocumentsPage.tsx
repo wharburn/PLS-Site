@@ -33,6 +33,7 @@ const ClientDocumentsPage: React.FC = () => {
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const objectUrlsRef = useRef<string[]>([]);
   const [replaceTarget, setReplaceTarget] = useState<UploadedDoc | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'thumbnail'>('list');
 
   const portalEmail = useMemo(() => {
     try {
@@ -327,6 +328,14 @@ const ClientDocumentsPage: React.FC = () => {
               <div className="text-sm text-slate-500">Upload passport or driver licence.</div>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewMode(viewMode === 'list' ? 'thumbnail' : 'list')}
+                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
+                title={viewMode === 'list' ? 'Switch to thumbnail view' : 'Switch to list view'}
+              >
+                {viewMode === 'list' ? '🖼️ Thumbnails' : '📋 List'}
+              </button>
               <select
                 className="px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold"
                 value={identityKind}
@@ -369,29 +378,57 @@ const ClientDocumentsPage: React.FC = () => {
                         href={match.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 min-w-0 hover:text-amber-700"
+                        className={`min-w-0 hover:text-amber-700 ${viewMode === 'thumbnail' ? 'flex flex-col gap-2' : 'flex items-center gap-3'}`}
                       >
-                        <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
-                          {match.isImage ? (
-                            <img
-                              src={match.url}
-                              alt={match.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="text-[10px] font-bold text-slate-400 uppercase">
-                              File
+                        {viewMode === 'thumbnail' ? (
+                          <>
+                            <div className="w-full aspect-[4/3] rounded-xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
+                              {match.isImage ? (
+                                <img
+                                  src={match.url}
+                                  alt={match.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="text-2xl">📄</div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-sm font-bold text-slate-800 truncate">
-                            {match.name}
-                          </div>
-                          <div className="text-[11px] text-slate-400 truncate">
-                            {formatSize(match.size)} • {new Date(match.timestamp).toLocaleString()}
-                          </div>
-                        </div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-bold text-slate-800 truncate">
+                                {match.name}
+                              </div>
+                              <div className="text-[11px] text-slate-400 truncate">
+                                {formatSize(match.size)} •{' '}
+                                {new Date(match.timestamp).toLocaleString()}
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                              {match.isImage ? (
+                                <img
+                                  src={match.url}
+                                  alt={match.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="text-[10px] font-bold text-slate-400 uppercase">
+                                  File
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-bold text-slate-800 truncate">
+                                {match.name}
+                              </div>
+                              <div className="text-[11px] text-slate-400 truncate">
+                                {formatSize(match.size)} •{' '}
+                                {new Date(match.timestamp).toLocaleString()}
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </a>
                       <div className="flex items-center gap-2">
                         <input
@@ -477,29 +514,57 @@ const ClientDocumentsPage: React.FC = () => {
                           href={doc.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-3 min-w-0 hover:text-amber-700"
+                          className={`min-w-0 hover:text-amber-700 ${viewMode === 'thumbnail' ? 'flex flex-col gap-2' : 'flex items-center gap-3'}`}
                         >
-                          <div className="w-10 h-10 rounded-lg bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
-                            {doc.isImage ? (
-                              <img
-                                src={doc.url}
-                                alt={doc.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="text-[10px] font-bold text-slate-400 uppercase">
-                                File
+                          {viewMode === 'thumbnail' ? (
+                            <>
+                              <div className="w-full aspect-[4/3] rounded-lg bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
+                                {doc.isImage ? (
+                                  <img
+                                    src={doc.url}
+                                    alt={doc.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="text-2xl">📄</div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-sm font-bold text-slate-800 truncate">
-                              {doc.name}
-                            </div>
-                            <div className="text-[11px] text-slate-400 truncate">
-                              {formatSize(doc.size)} • {new Date(doc.timestamp).toLocaleString()}
-                            </div>
-                          </div>
+                              <div className="min-w-0">
+                                <div className="text-sm font-bold text-slate-800 truncate">
+                                  {doc.name}
+                                </div>
+                                <div className="text-[11px] text-slate-400 truncate">
+                                  {formatSize(doc.size)} •{' '}
+                                  {new Date(doc.timestamp).toLocaleString()}
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-10 h-10 rounded-lg bg-white border border-slate-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                {doc.isImage ? (
+                                  <img
+                                    src={doc.url}
+                                    alt={doc.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="text-[10px] font-bold text-slate-400 uppercase">
+                                    File
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-sm font-bold text-slate-800 truncate">
+                                  {doc.name}
+                                </div>
+                                <div className="text-[11px] text-slate-400 truncate">
+                                  {formatSize(doc.size)} •{' '}
+                                  {new Date(doc.timestamp).toLocaleString()}
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </a>
                         <div className="flex items-center gap-2">
                           <input
