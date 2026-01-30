@@ -11,7 +11,8 @@ export const ClientDashboard: React.FC = () => {
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
 
   useEffect(() => {
-    loadData();
+    // Don't auto-load - wait for user to interact
+    setLoading(false);
   }, []);
 
   const loadData = async () => {
