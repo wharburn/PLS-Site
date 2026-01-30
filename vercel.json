@@ -4,28 +4,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "vite",
-  "env": [
-    {
-      "key": "VITE_SUPABASE_URL",
-      "value": "https://ivrnnzubplghzizefmjw.supabase.co",
-      "type": "plain"
-    },
-    {
-      "key": "VITE_SUPABASE_ANON_KEY",
-      "value": "@SUPABASE_ANON_KEY",
-      "type": "secret"
-    },
-    {
-      "key": "VITE_RESEND_API_KEY",
-      "value": "@RESEND_API_KEY",
-      "type": "secret"
-    },
-    {
-      "key": "VITE_GEMINI_API_KEY",
-      "value": "@GEMINI_API_KEY",
-      "type": "secret"
-    }
-  ],
   "regions": ["iad1"],
   "headers": [
     {
