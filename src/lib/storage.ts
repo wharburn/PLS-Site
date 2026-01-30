@@ -1,9 +1,10 @@
 /**
- * Supabase Storage Handler - File uploads
+ * Render Persistent Disk Storage Handler - File uploads
  */
 
 import { supabase } from './supabase';
 
+const STORAGE_PATH = '/mnt/data/uploads'; // Render persistent disk
 const BUCKET_NAME = 'statements';
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
