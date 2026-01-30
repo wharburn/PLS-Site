@@ -25,20 +25,21 @@ ensureDir(STORAGE_PATH);
 
 // Setup multer for file uploads
 const upload = multer({
-  dest: STORAGE_PATH,
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      const clientId = req.body.clientId;
+      // Get clientId from query or use 'default'
+      const clientId = req.query.clientId || req.body.clientId || 'default';
       const clientDir = path.join(STORAGE_PATH, clientId);
       ensureDir(clientDir);
       cb(null, clientDir);
     },
     filename: (req, file, cb) => {
-      const filename = req.body.filename || `${Date.now()}_${file.originalname}`;
+      // Use original filename with timestamp
+      const filename = `${Date.now()}_${file.originalname}`;
       cb(null, filename);
     },
   }),
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
 });
 
 // Middleware
@@ -57,18 +58,26 @@ app.get('/api/health', (req, res) => {
 });
 
 // Upload file
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
+app.post(
+  '/api/upload',
+  upload.fields([{ name: 'file' }, { name: 'clientId' }, { name: 'filename' }]),
+  (req, res) => {
+    if (!req.files || !req.files.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
 
-  const url = `/uploads/${req.body.clientId}/${req.body.filename}`;
-  res.json({
-    success: true,
-    url: url,
-    filename: req.body.filename,
-  });
-});
+    const file = req.files.file[0];
+    const clientId = req.body.clientId || 'default';
+    const filename = req.body.filename || file.originalname;
+
+    const url = `/uploads/${clientId}/${filename}`;
+    res.json({
+      success: true,
+      url: url,
+      filename: filename,
+    });
+  }
+);
 
 // List files for client
 app.get('/api/files', (req, res) => {
