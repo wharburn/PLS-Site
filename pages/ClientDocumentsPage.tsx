@@ -327,14 +327,6 @@ const ClientDocumentsPage: React.FC = () => {
               </div>
               <div className="text-sm text-slate-500">Upload passport or driver licence.</div>
             </div>
-            <button
-              type="button"
-              onClick={() => setViewMode(viewMode === 'list' ? 'thumbnail' : 'list')}
-              className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
-              title={viewMode === 'list' ? 'Switch to thumbnail view' : 'Switch to list view'}
-            >
-              {viewMode === 'list' ? '🖼️ Thumbnails' : '📋 List'}
-            </button>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {identityTypes.map((type) => {
@@ -360,9 +352,7 @@ const ClientDocumentsPage: React.FC = () => {
                         rel="noopener noreferrer"
                         className="min-w-0 hover:text-amber-700 flex flex-col gap-2"
                       >
-                        <div
-                          className={`rounded-xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center ${viewMode === 'thumbnail' ? 'w-full aspect-[7/4]' : 'w-full aspect-[7/4]'}`}
-                        >
+                        <div className="w-full aspect-[7/4] rounded-xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
                           {match.isImage ? (
                             <img
                               src={match.url}
@@ -429,6 +419,14 @@ const ClientDocumentsPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setViewMode(viewMode === 'list' ? 'thumbnail' : 'list')}
+                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
+                title={viewMode === 'list' ? 'Switch to thumbnail view' : 'Switch to list view'}
+              >
+                {viewMode === 'list' ? '🖼️ Thumbnails' : '📋 List'}
+              </button>
               <select
                 className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold"
                 value={accountingKind}
