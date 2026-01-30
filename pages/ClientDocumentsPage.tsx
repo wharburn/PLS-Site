@@ -59,37 +59,9 @@ const ClientDocumentsPage: React.FC = () => {
       console.error('Load client documents from localStorage failed', err);
     }
 
-    // Also fetch from backend to ensure we have all files
-    fetch(`/api/files?clientId=${encodeURIComponent(portalEmail)}`)
-      .then((res) => res.json())
-      .then((files) => {
-        if (files && files.length > 0) {
-          console.log('Loaded files from backend:', files);
-          // Merge with existing docs from localStorage
-          setDocs((prev) => {
-            const existingNames = new Set(prev.map((d) => d.name));
-            const newDocs = files
-              .filter((f: any) => !existingNames.has(f.name))
-              .map((f: any) => ({
-                id: crypto.randomUUID(),
-                name: f.name,
-                size: f.size,
-                category: 'accounting' as const,
-                timestamp: new Date().toISOString(),
-                url: f.url,
-                data: f.url,
-                mime: '',
-                isImage: false,
-                docKind: 'other' as const,
-                note: '',
-              }));
-            return [...prev, ...newDocs];
-          });
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to load files from backend', err);
-      });
+    // Note: We don't need to fetch from backend separately because
+    // the docs in localStorage already contain the URLs to backend files.
+    // The metadata (category, docKind) is stored in localStorage only.
   }, [portalEmail]);
 
   const persist = (nextDocs: UploadedDoc[], nextAudit = audit) => {
