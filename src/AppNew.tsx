@@ -32,6 +32,7 @@ import ClientDocumentsPage from '../pages/ClientDocumentsPage';
 import AdminClientDetailPage from '../pages/AdminClientDetailPage';
 import AdminClientsPage from '../pages/AdminClientsPage';
 import AdminLoginPage from './pages/AdminLoginPage';
+import AdminSettingsPage from './pages/AdminSettingsPage';
 
 import { Language } from '../translations';
 
@@ -111,6 +112,14 @@ const AppContent: React.FC = () => {
             element={
               <ProtectedRoute requireAdmin>
                 <AdminClientDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminSettingsPage />
               </ProtectedRoute>
             }
           />

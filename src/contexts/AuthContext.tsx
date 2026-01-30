@@ -37,7 +37,12 @@ export const useAuth = () => {
 };
 
 // Admin emails (in production, use a proper admin table)
-const ADMIN_EMAILS = ['wayne@novocom.ai', 'pedro@plsconsultants.com', 'admin@plsconsultants.com'];
+const ADMIN_EMAILS = [
+  'wayne@novocom.ai',
+  'pedro@plsconsultants.com',
+  'admin@plsconsultants.com',
+  'admin@pls.com',
+];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
