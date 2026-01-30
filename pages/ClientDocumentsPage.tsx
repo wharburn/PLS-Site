@@ -290,6 +290,9 @@ const ClientDocumentsPage: React.FC = () => {
                 {profile?.name || portalEmail}
               </span>
             </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Upload and manage your identity and accounting documents securely.
+            </p>
           </div>
           <div className="flex flex-col items-end gap-2" style={{ marginTop: '-60px' }}>
             <div
