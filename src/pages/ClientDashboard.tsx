@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import FileUpload from '../components/FileUpload';
+import DocumentViewer from '../components/DocumentViewer';
 
 export const ClientDashboard: React.FC = () => {
   const [clients, setClients] = useState<any[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [selectedDoc, setSelectedDoc] = useState<any>(null);
 
   useEffect(() => {
     loadData();
@@ -118,6 +120,7 @@ export const ClientDashboard: React.FC = () => {
               <th>Client</th>
               <th>Size</th>
               <th>Uploaded</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -129,10 +132,25 @@ export const ClientDashboard: React.FC = () => {
                 </td>
                 <td>{doc.file_size ? `${(doc.file_size / 1024).toFixed(2)}KB` : '-'}</td>
                 <td>{new Date(doc.uploaded_at).toLocaleDateString()}</td>
+                <td>
+                  <button
+                    className="btn-view"
+                    onClick={() => setSelectedDoc(doc)}
+                  >
+                    👁️ View
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        {selectedDoc && (
+          <DocumentViewer
+            document={selectedDoc}
+            onClose={() => setSelectedDoc(null)}
+          />
+        )}
       </div>
 
       <style>{`
@@ -206,6 +224,20 @@ export const ClientDashboard: React.FC = () => {
         .status.pending {
           background: #fef3c7;
           color: #92400e;
+        }
+
+        .btn-view {
+          padding: 6px 12px;
+          background: #0057FF;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
+        }
+
+        .btn-view:hover {
+          background: #0045cc;
         }
       `}</style>
     </div>

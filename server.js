@@ -1,23 +1,22 @@
-const express = require('express');
-const path = require('path');
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const PORT = 3000;
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// SPA routing - all requests go to index.html
-app.get('*', (req, res) => {
+// SPA routing - fallback to index.html
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).send('Server error');
-});
-
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ PLS CRM Server running on http://77.42.79.205:${PORT}/`);
-  console.log(`✅ Ready for production`);
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`✅ Access: http://77.42.79.205:${PORT}/`);
 });
