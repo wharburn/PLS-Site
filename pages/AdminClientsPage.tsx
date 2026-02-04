@@ -1,178 +1,271 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import supabase from '../src/lib/supabase';
+import type { Client } from '../src/lib/database.types';
+import AdminHelpChat from '../components/AdminHelpChat';
 
-type ClientRecord = {
-  profile: { name: string; email: string; address: string; phone: string };
-  updatedAt: string;
-  docs?: { category: string }[];
-  aiAccess?: boolean;
-};
+const pill = (bg: string, fg: string) => ({
+  background: bg,
+  color: fg,
+  padding: '6px 10px',
+  borderRadius: 999,
+  fontSize: 11,
+  fontWeight: 900 as const,
+  display: 'inline-block',
+});
+
+const LS_KEY = 'pls_admin_selected_client_ids_v1'; // kept for backwards compatibility
 
 const AdminClientsPage: React.FC = () => {
-  const [clients, setClients] = useState<Record<string, ClientRecord>>({});
-  const [aiMessage, setAiMessage] = useState('');
-  const [aiPrompt, setAiPrompt] = useState('');
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [q, setQ] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(() => {
+    // initial from localStorage (fast), then hydrated from server for cross-browser persistence
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      const parsed = raw ? (JSON.parse(raw) as string[]) : [];
+      return new Set(parsed.filter(Boolean));
+    } catch {
+      return new Set();
+    }
+  });
+  const [status, setStatus] = useState<'all' | Client['status']>('all');
+  const [basicsOnly, setBasicsOnly] = useState<'all' | 'missing'>('all');
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('pls_clients');
-      const parsed = raw ? JSON.parse(raw) : {};
-      const seedEmail = 'andrew.person@example.com';
-      const existing = parsed[seedEmail] || {};
-      parsed[seedEmail] = {
-        profile: {
-          name: 'Andrew Person',
-          email: seedEmail,
-          address: '30 Harrington Gardens, London SW7 4TL',
-          phone: '+44 7304 021 303 / 0207 555 1234',
-        },
-        docs: existing.docs || [],
-        audit: existing.audit || [],
-        updatedAt: existing.updatedAt || new Date().toISOString(),
-        password: existing.password || 'PLSwebsite',
-        aiAccess: existing.aiAccess !== undefined ? existing.aiAccess : true,
-      };
-      localStorage.setItem('pls_clients', JSON.stringify(parsed));
-      setClients(parsed);
-    } catch (err) {
-      console.error('Failed to load clients', err);
-    }
+    let alive = true;
+
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const query = supabase
+          .from('clients')
+          .select('*')
+          .order('name', { ascending: true })
+          .order('created_at', { ascending: false });
+
+        const { data, error: qErr } = await query;
+        if (qErr) throw qErr;
+        if (!alive) return;
+
+        setClients((data || []) as Client[]);
+      } catch (e: any) {
+        console.error(e);
+        if (!alive) return;
+        setError(e?.message || 'Failed to load clients.');
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  const entries = Object.entries(clients) as [string, ClientRecord][];
-
-  const setAiAccess = (email: string, value: boolean) => {
-    setClients((prev) => {
-      const next = { ...prev };
-      if (!next[email]) return prev;
-      next[email] = { ...next[email], aiAccess: value };
+  // Hydrate from server (cross-browser persistence)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
       try {
-        const key = 'pls_clients';
-        const raw = localStorage.getItem(key);
-        const parsed = raw ? JSON.parse(raw) : {};
-        if (parsed[email]) parsed[email].aiAccess = value;
-        localStorage.setItem(key, JSON.stringify(parsed));
-      } catch (err) {
-        console.error('Failed to persist aiAccess', err);
+        const r = await fetch('/api/admin/selected-clients');
+        if (!r.ok) return;
+        const j = await r.json();
+        const ids = Array.isArray(j?.clientIds) ? j.clientIds : [];
+        if (!alive) return;
+        setSelected(new Set(ids.map(String)));
+        // keep localStorage in sync too
+        try { localStorage.setItem(LS_KEY, JSON.stringify(ids)); } catch {}
+      } catch {
+        // ignore
       }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Persist selection (local + server)
+  useEffect(() => {
+    const ids = Array.from(selected);
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(ids));
+    } catch {
+      // ignore
+    }
+
+    // Debounced server save
+    const t = window.setTimeout(() => {
+      fetch('/api/admin/selected-clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientIds: ids }),
+      }).catch(() => {});
+    }, 300);
+
+    return () => window.clearTimeout(t);
+  }, [selected]);
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
-  const deleteClient = (email: string) => {
-    if (!confirm(`Delete client ${email}? This cannot be undone.`)) return;
-    setClients((prev) => {
-      const next = { ...prev };
-      delete next[email];
-      try {
-        const key = 'pls_clients';
-        const raw = localStorage.getItem(key);
-        const parsed = raw ? JSON.parse(raw) : {};
-        delete parsed[email];
-        localStorage.setItem(key, JSON.stringify(parsed));
-      } catch (err) {
-        console.error('Failed to delete client', err);
-      }
-      return next;
+  const filtered = useMemo(() => {
+    const qq = q.trim().toLowerCase();
+    return clients.filter((c) => {
+      const nm = String(c.name ?? '').toLowerCase();
+      const em = String(c.email ?? '').toLowerCase();
+      const matchQ = !qq || nm.includes(qq) || em.includes(qq);
+      const matchStatus = status === 'all' || c.status === status;
+
+      const missing: string[] = [];
+      if (!c.name || !String(c.name).trim()) missing.push('name');
+      if (!c.email || !String(c.email).trim()) missing.push('email');
+      if (!c.phone || !String(c.phone).trim()) missing.push('phone');
+      const basicsOk = missing.length === 0;
+      const matchBasics = basicsOnly === 'all' || (basicsOnly === 'missing' && !basicsOk);
+
+      return matchQ && matchStatus && matchBasics;
     });
-  };
+  }, [clients, q, status, basicsOnly]);
 
   return (
-    <div className="bg-slate-50 py-14">
-      <div className="max-w-6xl mx-auto px-6 space-y-6">
-        <div className="flex flex-col gap-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-[0.25em]">
-            Admin
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900">Client directory</h1>
-          <p className="text-slate-600 text-sm">Select a client to view profile and documents.</p>
-        </div>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: 'Arial, sans-serif' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '110px 24px 32px' }}>
+        {/* Admin AI assistant should be first thing on the page */}
+        <AdminHelpChat lang="en" />
 
-        <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-600">AI assistant (accountant)</div>
-            {aiMessage && <div className="text-xs text-amber-700">{aiMessage}</div>}
+        <div style={{ marginTop: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 900, color: '#94a3b8', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Admin</div>
+            <h1 style={{ fontSize: 30, margin: '8px 0 0', color: '#0f172a' }}>Client Directory</h1>
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 13, fontWeight: 700 }}>
+              Real-time list from Supabase table: <span style={{ fontFamily: 'monospace' }}>clients</span>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs text-slate-600">
-            {['Check missing docs','Draft reminder email','Summarize latest uploads','Prep doc requests','List clients missing ID'].map((s) => (
-              <button
-                key={s}
-                className="px-3 py-1.5 rounded-full border border-slate-200 hover:border-amber-300 hover:text-amber-700"
-                onClick={() => setAiPrompt(s)}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-          <textarea
-            value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
-            className="w-full border border-slate-200 rounded-2xl p-3 text-sm text-slate-800 bg-slate-50 focus:border-amber-500 focus:ring-amber-500 min-h-[110px]"
-            placeholder="Ask the AI to review clients, check missing documents, or draft reminders..."
-          />
           <button
-            className="w-full sm:w-auto px-4 py-2 bg-slate-900 text-amber-500 rounded-xl font-bold text-sm hover:bg-slate-800"
-            onClick={() => setAiMessage('Request sent to AI')}
+            onClick={() => (window.location.href = '/')}
+            style={{ background: '#0f172a', color: '#fff', padding: '10px 16px', borderRadius: 10, border: 0, fontWeight: 900, cursor: 'pointer' }}
           >
-            Send
+            Exit Admin
           </button>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-sm space-y-3">
-          <div className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-600">Quick AI suggestions</div>
-          <div className="flex flex-wrap gap-2 text-xs text-slate-600">
-            {['Identify clients missing ID','List clients missing bank statements','Draft doc request for all','Prepare compliance reminder'].map((s) => (
-              <button
-                key={s}
-                className="px-3 py-1.5 rounded-full border border-slate-200 hover:border-amber-300 hover:text-amber-700"
-                onClick={() => setAiPrompt(s)}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+        <div style={{ marginTop: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search name or email"
+            style={{ flex: '1 1 320px', background: '#fff', border: '1px solid #e2e8f0', padding: '10px 12px', borderRadius: 12, fontWeight: 800 }}
+          />
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as any)}
+            style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '10px 12px', borderRadius: 12, fontWeight: 900 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="archived">Archived</option>
+          </select>
+
+          <select
+            value={basicsOnly}
+            onChange={(e) => setBasicsOnly(e.target.value as any)}
+            style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '10px 12px', borderRadius: 12, fontWeight: 900 }}
+          >
+            <option value="all">All basics</option>
+            <option value="missing">Basics missing only</option>
+          </select>
         </div>
 
-        {entries.length === 0 && <div className="text-slate-500">No clients captured yet.</div>}
+        {error && (
+          <div style={{ marginTop: 16, background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca', padding: 12, borderRadius: 12, fontWeight: 900 }}>
+            {error}
+          </div>
+        )}
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {entries.map(([email, record]) => (
-            <div
-              key={email}
-              className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-amber-200 hover:bg-amber-50/40 transition-colors cursor-pointer"
-              onClick={() => navigate(`/admin/clients/${encodeURIComponent(email)}`)}
-            >
-              <div className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">{email}</div>
-              <div className="text-lg font-bold text-slate-900 mt-1">{record.profile.name || 'Unnamed client'}</div>
-              <div className="text-sm text-slate-500 mt-1 whitespace-pre-line">
-                {record.profile.address.replace(/,\s*/g, ',\n')}
-              </div>
-              <div className="text-[11px] text-slate-400 mt-2">Updated {new Date(record.updatedAt).toLocaleString()}</div>
-              <label
-                className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-600"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <input
-                  type="checkbox"
-                  checked={record.aiAccess !== false}
-                  onChange={(e) => setAiAccess(email, e.target.checked)}
-                />
-                AI access
-              </label>
-              <div className="mt-2 flex justify-end">
+        <div style={{ marginTop: 20, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 18, overflow: 'hidden' }}>
+          <div style={{ padding: 16, borderBottom: '1px solid #f1f5f9', fontWeight: 900, color: '#0f172a', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span>Clients</span>
+            <span style={{ fontSize: 12, color: '#64748b', fontWeight: 900 }}>
+              {loading ? 'Loading…' : `${filtered.length} shown • ${selected.size} selected`}
+            </span>
+          </div>
+
+          {filtered.map((c) => {
+            const anyC: any = c as any;
+            const displayName = (c.name ?? '').toString();
+            const displayEmail = (c.email ?? '').toString();
+            const displayPhone = (anyC.mobile ?? c.phone ?? '').toString();
+
+            const missing: string[] = [];
+            if (!displayName.trim()) missing.push('name');
+            if (!displayEmail.trim()) missing.push('email');
+            if (!displayPhone.trim()) missing.push('phone');
+            const basicsOk = missing.length === 0;
+
+            return (
+              <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '48px 2.2fr 1.2fr 2fr 1fr 1fr 1fr 1.2fr auto', gap: 12, alignItems: 'center', padding: 16, borderTop: '1px solid #f8fafc' }}>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(String(c.id))}
+                    onChange={() => toggle(String(c.id))}
+                    style={{ width: 18, height: 18 }}
+                    aria-label={`Select ${displayName || displayEmail || c.id}`}
+                  />
+                </div>
+
+                <div style={{ fontWeight: 900, color: '#0f172a' }}>{displayName || '—'}</div>
+
+                <div style={{ fontSize: 12, color: '#0f172a', fontWeight: 900 }}>{displayPhone || '—'}</div>
+
+                <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>{displayEmail || '—'}</div>
+
+                <div style={{ fontSize: 12, fontWeight: 900 }}>
+                  {c.status === 'active' && <span style={pill('#dcfce7', '#166534')}>ACTIVE</span>}
+                  {c.status === 'inactive' && <span style={pill('#fef9c3', '#854d0e')}>INACTIVE</span>}
+                  {c.status === 'archived' && <span style={pill('#e2e8f0', '#0f172a')}>ARCHIVED</span>}
+                </div>
+
+                <div style={{ fontSize: 12, fontWeight: 900, color: c.onboarding_completed ? '#166534' : '#0f172a' }}>
+                  {c.onboarding_completed ? 'Onboarded' : 'Onboarding'}
+                </div>
+
+                <div style={{ fontSize: 12, fontWeight: 900, color: c.ai_access ? '#166534' : '#991b1b' }}>{c.ai_access ? 'AI ON' : 'AI OFF'}</div>
+
+                <div style={{ fontSize: 12, fontWeight: 900 }}>
+                  {basicsOk ? (
+                    <span style={pill('#dcfce7', '#166534')}>BASICS OK</span>
+                  ) : (
+                    <span title={`Missing: ${missing.join(', ')}`} style={pill('#fef9c3', '#854d0e')}>BASICS MISSING</span>
+                  )}
+                </div>
+
                 <button
-                  className="text-[11px] font-semibold text-red-600 hover:text-red-700"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteClient(email);
-                  }}
+                  onClick={() => navigate(`/admin/clients/${encodeURIComponent(displayEmail || c.email)}`)}
+                  style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '8px 12px', borderRadius: 10, fontSize: 12, fontWeight: 900, cursor: 'pointer' }}
                 >
-                  Delete client
+                  Open
                 </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
+
+          {!loading && filtered.length === 0 && (
+            <div style={{ padding: 16, color: '#64748b', fontWeight: 800 }}>No clients matched your search.</div>
+          )}
         </div>
       </div>
     </div>

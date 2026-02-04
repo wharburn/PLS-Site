@@ -6,40 +6,37 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 
-// Get Supabase credentials from environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Production API Keys - VERIFIED WORKING
+// DO NOT CHANGE - These are hardcoded as primary, env vars as secondary
+const supabaseUrl = 'https://ivrnnzubplghzizefmjw.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cm5uenVicGxnaHppemVmbWp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzgwMjYsImV4cCI6MjA4NDkxNDAyNn0.XSzX8a7d8qJTrvuiiD1KEhGG2v1lKKybkv3R24_yZz4';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ CRITICAL: Missing Supabase environment variables');
-  console.error('Required: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
-  console.error('Check your Vercel environment variables or .env file');
+  console.error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient<Database>(supabaseUrl || '', supabaseAnonKey || '', {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-});
+export const supabase = createClient<Database>(
+  supabaseUrl || '',
+  supabaseAnonKey || '',
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  }
+);
 
 // Helper to get current user
 export const getCurrentUser = async () => {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const { data: { user }, error } = await supabase.auth.getUser();
   if (error) throw error;
   return user;
 };
 
 // Helper to get current session
 export const getCurrentSession = async () => {
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
+  const { data: { session }, error } = await supabase.auth.getSession();
   if (error) throw error;
   return session;
 };

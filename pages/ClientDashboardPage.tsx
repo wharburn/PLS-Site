@@ -1,481 +1,233 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Language } from '../translations.ts';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { createClient } from '@supabase/supabase-js';
 
-interface ClientDashboardPageProps {
-  lang: Language;
-}
+const supabaseUrl = 'https://ivrnnzubplghzizefmjw.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cm5uenVicGxnaHppemVmbWp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzgwMjYsImV4cCI6MjA4NDkxNDAyNn0.XSzX8a7d8qJTrvuiiD1KEhGG2v1lKKybkv3R24_yZz4';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-type Profile = {
-  name: string;
-  email: string;
-  workEmail: string;
-  address: string;
-  address2: string;
-  city: string;
-  postcode: string;
-  phone: string;
-  mobile: string;
-};
+// Files are stored in Supabase Storage now; the dashboard shows counts + latest names.
+const UPLOAD_API_BASE = '';
 
-type AuditEntry = {
-  id: string;
-  type: 'profile' | 'upload';
-  summary: string;
-  timestamp: string;
-};
+const ClientDashboardPage: React.FC = () => {
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [user, setUser] = useState<any>(null);
+    const [documents, setDocuments] = useState<any[]>([]);
 
-type UploadedDoc = {
-  id: string;
-  name: string;
-  size: number;
-  category: 'identity' | 'accounting';
-  timestamp: string;
-  url: string;
-  isImage: boolean;
-  docKind: 'passport' | 'driver_license' | 'bank_statement' | 'compliance' | 'expenses' | 'other';
-  note: string;
-  data?: string;
-  mime?: string;
-};
-
-const seedEmail = 'andrew.person@example.com';
-const seedProfile: Profile = {
-  name: 'Andrew Person',
-  email: seedEmail,
-  workEmail: 'andrew.person@work.com',
-  address: '30 Harrington Gardens',
-  address2: 'London',
-  city: 'London',
-  postcode: 'SW7 4TL',
-  phone: '+44 0207 555 1234',
-  mobile: '+44 7304 021 303',
-};
-
-const ClientDashboardPage: React.FC<ClientDashboardPageProps> = ({ lang: _lang }) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const onboardingProfile = useMemo(() => {
-    try {
-      const stored = localStorage.getItem('pls_signup_profile');
-      return stored ? (JSON.parse(stored) as Profile) : null;
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const portalEmail = useMemo(() => {
-    try {
-      return (
-        localStorage.getItem('pls_portal_email') || (location.state as any)?.email || seedEmail
-      );
-    } catch {
-      return seedEmail;
-    }
-  }, [location.state]);
-
-  const [profile, setProfile] = useState<Profile>(seedProfile);
-  const [draft, setDraft] = useState<Profile>(seedProfile);
-  const [audit, setAudit] = useState<AuditEntry[]>([]);
-  const [docs, setDocs] = useState<UploadedDoc[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [identityKind, setIdentityKind] = useState<UploadedDoc['docKind']>('passport');
-  const [accountingKind, setAccountingKind] = useState<UploadedDoc['docKind']>('bank_statement');
-  const objectUrlsRef = useRef<string[]>([]);
-  const replaceInputRef = useRef<HTMLInputElement>(null);
-  const [replaceTarget, setReplaceTarget] = useState<UploadedDoc | null>(null);
-  const [aiAccess, setAiAccess] = useState(true);
-
-  useEffect(() => {
-    try {
-      const key = 'pls_clients';
-      const raw = localStorage.getItem(key);
-      const parsed = raw ? JSON.parse(raw) : {};
-      let rec = parsed[portalEmail];
-      if (!rec) {
-        rec = {
-          profile: onboardingProfile || seedProfile,
-          docs: [],
-          audit: [],
-          updatedAt: new Date().toISOString(),
-          aiAccess: true,
-        };
-        parsed[portalEmail] = rec;
-        localStorage.setItem(key, JSON.stringify(parsed));
-      }
-      setProfile(rec.profile || seedProfile);
-      setDraft(rec.profile || seedProfile);
-      setDocs(rec.docs || []);
-      setAudit(rec.audit || []);
-      setAiAccess(rec.aiAccess !== false);
-    } catch (err) {
-      console.error('Failed to load client data', err);
-      setProfile(seedProfile);
-      setDraft(seedProfile);
-    }
-  }, [portalEmail, onboardingProfile]);
-
-  const logChange = (summary: string, type: AuditEntry['type']) => {
-    setAudit((prev) => [
-      { id: crypto.randomUUID(), summary, type, timestamp: new Date().toISOString() },
-      ...prev,
-    ]);
-  };
-
-  const persistClient = (nextDocs: UploadedDoc[], nextAudit: AuditEntry[]) => {
-    try {
-      const key = 'pls_clients';
-      const raw = localStorage.getItem(key);
-      const parsed = raw ? JSON.parse(raw) : {};
-      const record = {
-        profile,
-        docs: nextDocs,
-        audit: nextAudit,
-        updatedAt: new Date().toISOString(),
-        aiAccess,
-      };
-      parsed[portalEmail] = record;
-      localStorage.setItem(key, JSON.stringify(parsed));
-    } catch (err) {
-      console.error('Persist client failed', err);
-    }
-  };
-
-  const saveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    const diffs: string[] = [];
-    (['name', 'email', 'address', 'phone'] as (keyof Profile)[]).forEach((key) => {
-      if (profile[key] !== draft[key]) {
-        diffs.push(`${key} changed`);
-      }
-    });
-    setProfile(draft);
-    if (diffs.length > 0) {
-      logChange(`Profile updated: ${diffs.join(', ')}`, 'profile');
-    }
-    persistClient(docs, audit);
-    setSaving(true);
-    setTimeout(() => setSaving(false), 700);
-  };
-
-  const handleUpload = (
-    category: UploadedDoc['category'],
-    fileList: FileList | null,
-    docKind: UploadedDoc['docKind']
-  ) => {
-    if (!fileList || fileList.length === 0) return;
-    const files = Array.from(fileList);
-    const newEntries: UploadedDoc[] = files.map((file) => {
-      const url = URL.createObjectURL(file);
-      objectUrlsRef.current.push(url);
-      return {
-        id: crypto.randomUUID(),
-        name: file.name,
-        size: file.size,
-        category,
-        timestamp: new Date().toISOString(),
-        url,
-        isImage: file.type.startsWith('image/'),
-        docKind,
-        note: '',
-      };
+    const [formData, setFormData] = useState({
+        name: '',
+        personalEmail: '',
+        addressLine1: '',
+        workEmail: '',
+        addressLine2: '',
+        mobile: '',
+        city: '',
+        postcode: '',
+        telephone: ''
     });
 
-    setDocs((prev) => {
-      let next = [...prev];
-      if (category === 'identity') {
-        next = next.filter((d) => !(d.category === 'identity' && d.docKind === docKind));
-      }
-      next = [...newEntries, ...next];
-      const desc = category === 'identity' ? 'Identity Vault' : 'Accounting Folder';
-      logChange(`Uploaded ${newEntries.length} file(s) to ${desc} (${docKind})`, 'upload');
-      persistClient(next, audit);
-      return next;
-    });
-  };
+    useEffect(() => {
+        let isMounted = true;
+        async function loadData() {
+            setLoading(true);
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!isMounted) return;
 
-  const formatSize = (size: number) => {
-    if (size < 1024) return `${size} B`;
-    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-  };
+                if (session?.user) {
+                    setUser(session.user);
 
-  const identityDocs = docs.filter((d) => d.category === 'identity');
-  const accountingDocs = docs.filter((d) => d.category === 'accounting');
+                    const savedProfile = localStorage.getItem(`client_profile_full_v5_${session.user.id}`);
+                    if (savedProfile) setFormData(JSON.parse(savedProfile));
+                    else setFormData(prev => ({ ...prev, personalEmail: session.user.email || '' }));
 
-  React.useEffect(() => {
-    return () => {
-      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+                    // Load documents from DB so they show across browsers
+                    const email = session.user.email;
+                    if (email) {
+                        const { data: clientRow, error: cErr } = await supabase
+                            .from('clients')
+                            .select('id')
+                            .eq('email', email)
+                            .maybeSingle();
+                        if (cErr) throw cErr;
+
+                        if (clientRow?.id) {
+                            const { data: docs, error: dErr } = await supabase
+                                .from('documents')
+                                .select('id, name, category, doc_kind, file_path, uploaded_at, mime_type, file_size')
+                                .eq('client_id', clientRow.id)
+                                .order('uploaded_at', { ascending: false });
+                            if (dErr) throw dErr;
+
+                            const mapped = (docs || []).map((d: any) => {
+                                let uiCategory = 'OTHER';
+                                let subCategory: any = undefined;
+                                if (d.category === 'identity') {
+                                    uiCategory = 'IDENTITY';
+                                    if (d.doc_kind === 'passport') subCategory = 'PASSPORT';
+                                    if (d.doc_kind === 'driver_license') subCategory = 'LICENSE';
+                                } else if (d.doc_kind === 'bank_statement') uiCategory = 'BANK';
+                                else if (d.doc_kind === 'compliance') uiCategory = 'COMPLIANCE';
+                                else if (d.doc_kind === 'expenses') uiCategory = 'EXPENSES';
+                                else uiCategory = 'OTHER';
+
+                                // file_path now contains Supabase Storage object path
+                                const storagePath = String(d.file_path || '').replace(/^\/+/, '');
+
+                                return {
+                                    id: d.id,
+                                    name: d.name,
+                                    category: uiCategory,
+                                    subCategory,
+                                    uploadDate: d.uploaded_at ? new Date(d.uploaded_at).toLocaleString() : '',
+                                    storagePath,
+                                    url: null,
+                                    thumbnail: '📄',
+                                };
+                            });
+
+                            setDocuments(mapped);
+                        } else {
+                            setDocuments([]);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        }
+
+        loadData();
+        return () => { isMounted = false; };
+    }, []);
+
+    const handleSaveChanges = () => {
+        if (!user) return;
+        setSaving(true);
+        localStorage.setItem(`client_profile_full_v5_${user.id}`, JSON.stringify(formData));
+        setTimeout(() => { setSaving(false); alert('Profile saved.'); }, 400);
     };
-  }, []);
 
-  const triggerReplace = (doc: UploadedDoc) => {
-    setReplaceTarget(doc);
-    replaceInputRef.current?.click();
-  };
+    const getIdentityDoc = (tag: string) => documents.find(d => d.category === 'IDENTITY' && d.subCategory === tag);
+    const getDocCount = (cat: string) => documents.filter(d => d.category === cat).length;
 
-  const handleReplace = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !replaceTarget) return;
-    const file = files[0];
-    const url = URL.createObjectURL(file);
-    objectUrlsRef.current.push(url);
-    const updated: UploadedDoc = {
-      ...replaceTarget,
-      id: crypto.randomUUID(),
-      name: file.name,
-      size: file.size,
-      timestamp: new Date().toISOString(),
-      url,
-      isImage: file.type.startsWith('image/'),
-    };
-    setDocs((prev) => {
-      const next = prev.map((d) => (d.id === replaceTarget.id ? updated : d));
-      logChange(`Replaced ${replaceTarget.name} with ${file.name}`, 'upload');
-      persistClient(next, audit);
-      return next;
-    });
-    setReplaceTarget(null);
-    e.target.value = '';
-  };
+    const labelStyle = { display: 'block', fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: '6px', letterSpacing: '0.05em' };
+    const inputStyle = { width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '15px', color: '#0f172a', backgroundColor: '#ffffff', height: '48px', boxSizing: 'border-box' as const, outline: 'none', fontWeight: 'bold' };
+    const sidebarBoxStyle = { backgroundColor: '#ffffff', padding: '24px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' };
 
-  const updateNote = (id: string, value: string) => {
-    setDocs((prev) => {
-      const next = prev.map((d) => (d.id === id ? { ...d, note: value } : d));
-      persistClient(next, audit);
-      return next;
-    });
-  };
-
-  if (!portalEmail) {
     return (
-      <div className="bg-slate-50 py-20">
-        <div className="max-w-3xl mx-auto px-6 text-center space-y-4">
-          <h1 className="text-3xl font-bold text-slate-900">Portal access required</h1>
-          <p className="text-slate-600">
-            Please sign in or create an account to view your client workspace.
-          </p>
-          <div className="flex gap-3 justify-center">
-            <button
-              className="px-6 py-3 bg-slate-900 text-amber-500 font-bold rounded-xl shadow hover:bg-slate-800"
-              onClick={() => navigate('/')}
-            >
-              Go to sign in
-            </button>
-            <Link
-              to="/signup"
-              className="px-6 py-3 bg-amber-500 text-white font-bold rounded-xl shadow hover:bg-amber-600"
-            >
-              Create account
-            </Link>
-          </div>
+        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: "Arial, sans-serif" }}>
+            <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '110px 24px 32px 24px', width: '100%', boxSizing: 'border-box' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingLeft: '10px' }}>
+                    <div style={{ flex: '1' }}>
+                        <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#0f172a', margin: '0', display: 'flex', alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                            <span>Client Portal</span>
+                            <span style={{ color: '#c5a059', marginLeft: '16px' }}>Master Secure Workspace</span>
+                        </h1>
+                        <p style={{ color: '#64748b', margin: '8px 0 0 15px', fontSize: '14px', fontWeight: 'bold' }}>manage your profile , upload all your documents</p>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '140px 140px 110px', gap: '8px', paddingTop: '4px' }}>
+                        <button onClick={handleSaveChanges} disabled={saving} style={{ backgroundColor: '#0f172a', color: '#ffffff', padding: '10px 0', borderRadius: '10px', border: 'none', fontWeight: '800', fontSize: '14px', cursor: 'pointer', height: '44px', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)' }}>
+                            {saving ? '...' : 'Save changes'}
+                        </button>
+                        <button onClick={() => navigate('/client/documents')} style={{ backgroundColor: '#c5a059', color: '#ffffff', padding: '10px 0', borderRadius: '10px', border: 'none', fontWeight: '800', fontSize: '14px', cursor: 'pointer', height: '44px' }}>
+                            Documents
+                        </button>
+                        <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/#client-portal'; }} style={{ backgroundColor: 'white', color: '#64748b', padding: '10px 0', borderRadius: '10px', border: '1px solid #e2e8f0', fontWeight: '800', fontSize: '14px', cursor: 'pointer', height: '44px' }}>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '24px', marginTop: '48px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        <div style={{ backgroundColor: '#ffffff', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                            <h2 style={{ fontSize: '31px', fontWeight: 'bold', color: '#0f172a', marginBottom: '32px', margin: '0 0 32px 0' }}>Profile details</h2>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div><label style={labelStyle}>NAME</label><input type="text" value={formData.name} style={inputStyle} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+                                <div><label style={labelStyle}>PERSONAL EMAIL</label><input type="email" value={formData.personalEmail} style={inputStyle} onChange={e => setFormData({ ...formData, personalEmail: e.target.value })} /></div>
+                                <div><label style={labelStyle}>ADDRESS LINE 1</label><input type="text" value={formData.addressLine1} style={inputStyle} onChange={e => setFormData({ ...formData, addressLine1: e.target.value })} /></div>
+                                <div><label style={labelStyle}>WORK EMAIL</label><input type="email" value={formData.workEmail} placeholder="work@company.com" style={inputStyle} onChange={e => setFormData({ ...formData, workEmail: e.target.value })} /></div>
+                                <div><label style={labelStyle}>ADDRESS LINE 2</label><input type="text" value={formData.addressLine2} style={inputStyle} onChange={e => setFormData({ ...formData, addressLine2: e.target.value })} /></div>
+                                <div><label style={labelStyle}>MOBILE</label><input type="tel" value={formData.mobile} style={inputStyle} onChange={e => setFormData({ ...formData, mobile: e.target.value })} /></div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                    <div><label style={labelStyle}>CITY</label><input type="text" value={formData.city} style={inputStyle} onChange={e => setFormData({ ...formData, city: e.target.value })} /></div>
+                                    <div><label style={labelStyle}>POSTCODE</label><input type="text" value={formData.postcode} style={inputStyle} onChange={e => setFormData({ ...formData, postcode: e.target.value })} /></div>
+                                </div>
+                                <div><label style={labelStyle}>TELEPHONE</label><input type="tel" value={formData.telephone} style={inputStyle} onChange={e => setFormData({ ...formData, telephone: e.target.value })} /></div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                            {[
+                                { label: 'AI Legal', sub: 'Advice', icon: '⚖️', path: '/ai/legal' },
+                                { label: 'AI Translate', sub: 'Docs', icon: '🌐', path: '/ai/translation' },
+                                { label: 'AI Analysis', sub: 'Reports', icon: '📊', path: '/ai/analysis' },
+                                { label: 'AI Chat', sub: 'Support', icon: '💬', path: '/ai/chat' }
+                            ].map((tool, i) => (
+                                <div key={i} onClick={() => navigate(tool.path)} style={{ backgroundColor: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', textAlign: 'center', cursor: 'pointer' }}>
+                                    <div style={{ fontSize: '24px', marginBottom: '8px', filter: 'saturate(1.5)' }}>{tool.icon}</div>
+                                    <div style={{ fontSize: '12px', fontWeight: '900', color: '#0f172a' }}>{tool.label}</div>
+                                    <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>{tool.sub}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={sidebarBoxStyle}>
+                            <div style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '16px' }}>Identity Documents</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div>
+                                    <div style={{ height: '96px', borderRadius: '12px', background: 'linear-gradient(135deg, #f1f5f9 25%, #cbd5e1 75%)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }}>
+                                        {getIdentityDoc('PASSPORT') ? <img src={getIdentityDoc('PASSPORT').thumbnail} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#64748b' }}>PASSPORT</span>}
+                                    </div>
+                                    <div style={{ marginTop: '6px', fontSize: '9px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', textAlign: 'center' }}>Passport</div>
+                                </div>
+                                <div>
+                                    <div style={{ height: '96px', borderRadius: '12px', background: 'linear-gradient(135deg, #f1f5f9 25%, #cbd5e1 75%)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }}>
+                                        {getIdentityDoc('LICENSE') ? <img src={getIdentityDoc('LICENSE').thumbnail} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#64748b' }}>LICENCE</span>}
+                                    </div>
+                                    <div style={{ marginTop: '6px', fontSize: '9px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', textAlign: 'center' }}>Licence</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={sidebarBoxStyle}>
+                            <div style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '16px' }}>Accounting Documents</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {[ { label: 'BANK', cat: 'BANK', color: '#86efac', icon: '🏦' }, { label: 'COMPLIANCE', cat: 'COMPLIANCE', color: '#fca5a5', icon: '⚖️' }, { label: 'EXPENSES', cat: 'EXPENSES', color: '#fef08a', icon: '💰' }, { label: 'OTHER', cat: 'OTHER', color: '#93c5fd', icon: '📂' }].map(item => (
+                                    <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f8fafc' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ width: '32px', height: '32px', backgroundColor: item.color, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>{item.icon}</div>
+                                            <span style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a' }}>{item.label}</span>
+                                        </div>
+                                        <span style={{ fontSize: '14px', fontWeight: '900', color: '#0f172a' }}>{getDocCount(item.cat)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div style={sidebarBoxStyle}>
+                            <div style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '12px' }}>Latest Uploads</div>
+                            <div style={{ height: '100px', overflowY: 'auto' }}>
+                                {documents.slice().reverse().map((d, i) => (
+                                    <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '900', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>{d.name}</div>
+                                        <div style={{ fontSize: '9px', color: '#94a3b8' }}>{d.uploadDate.split(',')[0]}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     );
-  }
-
-  return (
-    <div className="bg-slate-50 py-8 pt-12">
-      <div className="max-w-6xl mx-auto px-6 space-y-4">
-        <input type="file" ref={replaceInputRef} className="hidden" onChange={handleReplace} />
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold" style={{ paddingTop: '30px' }}>
-              <span className="text-amber-600">Client Portal</span>
-              <span style={{ marginLeft: '30px' }} className="text-slate-900">
-                Your secure workspace
-              </span>
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Manage your profile and keep track of all your documents secure here.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
-          >
-            <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">
-              🏠
-            </span>
-            Back to website
-          </button>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-6 lg:items-stretch">
-          <div className="lg:col-span-2">
-            <div className="bg-white pt-7 px-7 pb-4 rounded-3xl border border-slate-200 shadow-sm h-full">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-slate-900">Profile details</h2>
-                <button
-                  type="button"
-                  onClick={saveProfile}
-                  className="px-6 py-3 bg-slate-900 text-amber-500 font-bold rounded-xl shadow hover:bg-slate-800 transition-all"
-                >
-                  Save changes
-                </button>
-              </div>
-              <form className="space-y-5">
-                <div className="grid md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      value={draft.name}
-                      onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                      Personal Email
-                    </label>
-                    <input
-                      type="email"
-                      value={draft.email}
-                      onChange={(e) => setDraft({ ...draft, email: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                      Address Line 1
-                    </label>
-                    <input
-                      type="text"
-                      value={draft.address}
-                      onChange={(e) => setDraft({ ...draft, address: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                      Work Email
-                    </label>
-                    <input
-                      type="email"
-                      value={draft.workEmail}
-                      onChange={(e) => setDraft({ ...draft, workEmail: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                      Address Line 2
-                    </label>
-                    <input
-                      type="text"
-                      value={draft.address2}
-                      onChange={(e) => setDraft({ ...draft, address2: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                      Mobile
-                    </label>
-                    <input
-                      type="tel"
-                      value={draft.mobile}
-                      onChange={(e) => setDraft({ ...draft, mobile: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-5">
-                  <div className="grid grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                        City
-                      </label>
-                      <input
-                        type="text"
-                        value={draft.city}
-                        onChange={(e) => setDraft({ ...draft, city: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                        Postcode
-                      </label>
-                      <input
-                        type="text"
-                        value={draft.postcode}
-                        onChange={(e) => setDraft({ ...draft, postcode: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                      Telephone
-                    </label>
-                    <input
-                      type="tel"
-                      value={draft.phone}
-                      onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          <div className="bg-white pt-6 px-6 pb-4 rounded-3xl border border-slate-200 shadow-sm space-y-2 h-full">
-            <div className="flex justify-end">
-              <Link
-                to="/client/documents"
-                className="px-6 py-3 bg-slate-900 text-amber-500 font-bold rounded-xl shadow hover:bg-slate-800 transition-all"
-              >
-                Manage documents
-              </Link>
-            </div>
-            <div className="p-3 border border-slate-100 rounded-xl bg-slate-50">
-              <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-amber-600">
-                Identity
-              </div>
-              <div className="text-xl font-bold text-slate-900">{identityDocs.length}</div>
-              <div className="text-[11px] text-slate-500">Passport / Driver Licence</div>
-            </div>
-            <div className="p-3 border border-slate-100 rounded-xl bg-slate-50">
-              <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-700">
-                Accounting
-              </div>
-              <div className="text-xl font-bold text-slate-900">{accountingDocs.length}</div>
-              <div className="text-[11px] text-slate-500">Bank, compliance, expenses, other</div>
-            </div>
-            <div className="p-3 border border-slate-100 rounded-xl bg-slate-50">
-              <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-700">
-                Latest upload
-              </div>
-              <div className="text-sm text-slate-900 font-bold truncate">
-                {docs[0]?.name || '—'}
-              </div>
-              <div className="text-[10px] text-slate-500">
-                {docs[0] ? new Date(docs[0].timestamp).toLocaleString() : 'No documents yet'}
-              </div>
-            </div>
-            <div className="p-3 border border-slate-100 rounded-xl bg-slate-50">
-              <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-700">
-                Audit entries
-              </div>
-              <div className="text-xl font-bold text-slate-900">{audit.length}</div>
-              <div className="text-[11px] text-slate-500">Recent actions</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 };
 
 export default ClientDashboardPage;

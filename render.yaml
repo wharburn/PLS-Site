@@ -4,10 +4,10 @@ services:
     runtime: node
     buildCommand: npm install && npm run build
     startCommand: npm start
-    disk:
-      name: pls-uploads
-      mountPath: /mnt/data
-      sizeGB: 10
     envVars:
-      - key: NODE_ENV
-        value: production
+      - key: NODE_VERSION
+        value: 22
+      # You will set these in Render dashboard (Environment tab):
+      # - VITE_SUPABASE_URL
+      # - VITE_SUPABASE_ANON_KEY
+      # - GEMINI_API_KEY (optional)

@@ -1,276 +1,262 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import supabase from '../src/lib/supabase';
+import type { Client, Document } from '../src/lib/database.types';
 
-type StoredDoc = {
-  id: string;
-  name: string;
-  size: number;
-  category: 'identity' | 'accounting';
-  timestamp: string;
-  url: string;
-  isImage: boolean;
-  docKind: string;
-  note: string;
-  data?: string;
-  mime?: string;
+type FeatureKey = 'ai_chat' | 'ai_legal' | 'ai_translation' | 'ai_analysis';
+
+const defaultFeatures: Record<FeatureKey, boolean> = {
+  ai_chat: true,
+  ai_legal: true,
+  ai_translation: true,
+  ai_analysis: true,
 };
 
-type StoredClient = {
-  profile: { name: string; email: string; address: string; phone: string };
-  docs: StoredDoc[];
-  audit: { id: string; summary: string; timestamp: string }[];
-  updatedAt: string;
-};
+const getFeatureStorageKey = (clientId: string) => `pls_client_features_${clientId}`;
 
 const AdminClientDetailPage: React.FC = () => {
-  const { email } = useParams();
+  const { email } = useParams<{ email: string }>();
   const navigate = useNavigate();
-  const [client, setClient] = useState<StoredClient | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [client, setClient] = useState<Client | null>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [savingAI, setSavingAI] = useState(false);
+
+  // Per-service toggles (TEMP STORAGE): localStorage until we add DB columns/table
+  const [features, setFeatures] = useState<Record<FeatureKey, boolean>>(defaultFeatures);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('pls_clients');
-      const parsed = raw ? JSON.parse(raw) : {};
-      if (email && parsed[email]) {
-        setClient(parsed[email]);
+    let alive = true;
+
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        if (!email) throw new Error('Missing client email in URL.');
+
+        const { data: c, error: cErr } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (cErr) throw cErr;
+        if (!c) throw new Error('Client not found.');
+
+        const { data: docs, error: dErr } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('client_id', c.id)
+          .order('uploaded_at', { ascending: false });
+
+        if (dErr) throw dErr;
+
+        if (!alive) return;
+
+        setClient(c as Client);
+        setDocuments((docs || []) as Document[]);
+
+        // hydrate feature flags from localStorage
+        try {
+          const raw = localStorage.getItem(getFeatureStorageKey(c.id));
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            setFeatures({ ...defaultFeatures, ...(parsed || {}) });
+          }
+        } catch {
+          // ignore
+        }
+      } catch (e: any) {
+        console.error(e);
+        if (!alive) return;
+        setError(e?.message || 'Failed to load client detail.');
+      } finally {
+        if (alive) setLoading(false);
       }
-    } catch (err) {
-      console.error('Failed to load client', err);
-    }
+    })();
+
+    return () => {
+      alive = false;
+    };
   }, [email]);
 
-  if (!client) {
-    return (
-      <div className="bg-slate-50 py-14">
-        <div className="max-w-5xl mx-auto px-6">
-          <h1 className="text-2xl font-bold text-slate-900">Client not found</h1>
-          <p className="text-slate-600 mt-2">No record available for {email}.</p>
-        </div>
-      </div>
-    );
-  }
+  const missingDocs = useMemo(() => {
+    // Simple v1 checklist; we can make this table-driven later
+    const requiredKinds = ['passport', 'proof_of_address'];
+    const present = new Set(documents.map((d) => d.doc_kind));
+    return requiredKinds.filter((k) => !present.has(k));
+  }, [documents]);
 
-  const identityDocs = client.docs?.filter((d) => d.category === 'identity') || [];
-  const accountingDocs = client.docs?.filter((d) => d.category === 'accounting') || [];
+  const toggleFeature = (k: FeatureKey) => {
+    if (!client) return;
+    const next = { ...features, [k]: !features[k] };
+    setFeatures(next);
+    localStorage.setItem(getFeatureStorageKey(client.id), JSON.stringify(next));
+  };
 
-  const requiredIdentity: { key: string; label: string }[] = [
-    { key: 'passport', label: 'Passport' },
-    { key: 'driver_license', label: 'Driver Licence' },
-  ];
+  const setAiAccess = async (nextValue: boolean) => {
+    if (!client) return;
+    try {
+      setSavingAI(true);
+      const { error } = await supabase.from('clients').update({ ai_access: nextValue }).eq('id', client.id);
+      if (error) throw error;
+      setClient({ ...client, ai_access: nextValue });
+    } catch (e: any) {
+      console.error(e);
+      alert(e?.message || 'Failed to update AI access.');
+    } finally {
+      setSavingAI(false);
+    }
+  };
 
-  const requiredAccounting: { key: string; label: string }[] = [
-    { key: 'bank_statement', label: 'Bank statements' },
-    { key: 'compliance', label: 'Compliance documents' },
-    { key: 'expenses', label: 'Expenses' },
-  ];
+  if (loading) return null;
+  if (error) return <div style={{ padding: 100, textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>{error}</div>;
+  if (!client) return <div style={{ padding: 100, textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>Client not found.</div>;
 
-  const hasDocKind = (docs: StoredDoc[], kind: string) => docs.some((d) => d.docKind === kind);
-  const missingIdentity = requiredIdentity.filter((r) => !hasDocKind(identityDocs, r.key));
-  const missingAccounting = requiredAccounting.filter((r) => !hasDocKind(accountingDocs, r.key));
-
-  const suggestions: string[] = [];
-  if (missingIdentity.length)
-    suggestions.push(`Request ID: ${missingIdentity.map((m) => m.label).join(', ')}`);
-  if (missingAccounting.length)
-    suggestions.push(
-      `Request accounting docs: ${missingAccounting.map((m) => m.label).join(', ')}`
-    );
-  if (!missingAccounting.length)
-    suggestions.push('Accounting pack appears complete; proceed with reconciliation.');
-  if (accountingDocs.length && !missingAccounting.length)
-    suggestions.push('Run anomaly checks on uploaded statements/expenses.');
-  if (!identityDocs.length) suggestions.push('ID missing; obtain before filing or onboarding.');
+  const labelStyle = { display: 'block', fontSize: '9px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: '6px', letterSpacing: '0.1em' };
+  const box = { width: '100%', padding: '14px 16px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', color: '#0f172a', fontWeight: 800 };
 
   return (
-    <div className="bg-slate-50 py-14 pt-[0.25rem]">
-      <div className="max-w-6xl mx-auto px-6 space-y-8">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="space-y-1">
-            <div className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
-              Admin view
-            </div>
-            <h1 className="text-3xl font-bold text-slate-900 mt-1">
-              {client.profile.name || email}
+    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: 'Arial, sans-serif' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '120px 24px 32px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ fontSize: 30, fontWeight: 900, color: '#0f172a', margin: 0 }}>
+              Case Review: <span style={{ color: '#c5a059' }}>{client.name}</span>
             </h1>
-            <div className="text-slate-600 text-sm">{client.profile.email}</div>
-            <div className="text-slate-500 text-sm whitespace-pre-line">
-              {client.profile.address.replace(/,\s*/g, ',\n')}
-            </div>
-            <div className="text-slate-500 text-sm whitespace-pre-line">
-              {client.profile.phone.replace(/\s*\/\s*/g, '\n')}
-            </div>
-            <div className="text-[11px] text-slate-400 mt-1">
-              Updated {new Date(client.updatedAt).toLocaleString()}
-            </div>
+            <div style={{ marginTop: 8, color: '#64748b', fontSize: 13, fontWeight: 800 }}>{client.email}</div>
           </div>
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
-          >
-            <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">
-              ←
-            </span>
-            Back
+          <button onClick={() => navigate('/admin/clients')} style={{ backgroundColor: '#0f172a', color: '#ffffff', padding: '10px 16px', borderRadius: 10, border: 'none', fontWeight: 900, cursor: 'pointer', height: 40 }}>
+            Back to Directory
           </button>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <h3 className="text-lg font-bold text-slate-900">AI assistant</h3>
-            <div className="flex gap-2 text-xs text-slate-500">
-              <span>UK & PT accounting-aware</span>
-              <span className="text-amber-600">•</span>
-              <span>Can draft doc requests</span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {[
-              'Check missing docs',
-              'Draft reminder email',
-              'Summarize latest uploads',
-              'List required ID items',
-            ].map((s) => (
-              <button
-                key={s}
-                className="px-3 py-2 rounded-full border border-slate-200 text-xs font-semibold text-slate-700 hover:border-amber-300 hover:text-amber-700"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-          <textarea
-            className="w-full border border-slate-200 rounded-2xl p-4 text-sm text-slate-800 bg-slate-50 focus:border-amber-500 focus:ring-amber-500 min-h-[120px]"
-            placeholder="Ask the AI to review missing documents, draft reminders, or suggest next steps..."
-          />
-          <button className="px-4 py-3 bg-slate-900 text-amber-500 rounded-xl font-bold text-sm hover:bg-slate-800 w-full sm:w-auto">
-            Send to AI
-          </button>
-        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.9fr', gap: 24, marginTop: 28 }}>
+          {/* LEFT */}
+          <div style={{ backgroundColor: '#ffffff', padding: 24, borderRadius: 18, border: '1px solid #e2e8f0' }}>
+            <h2 style={{ fontSize: 16, fontWeight: 900, margin: 0, color: '#0f172a' }}>Client</h2>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 mb-3">Documents</h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-              {identityDocs.map((doc) => (
-                <a
-                  key={doc.id}
-                  href={doc.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2 hover:border-amber-200 hover:bg-amber-50/40"
-                >
-                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-600">
-                    {doc.docKind}
-                  </div>
-                  <div className="text-sm font-bold text-slate-800 truncate">{doc.name}</div>
-                  <div className="text-xs text-slate-500 truncate">{doc.note || 'No note'}</div>
-                  <div className="text-[11px] text-slate-400">
-                    {new Date(doc.timestamp).toLocaleString()}
-                  </div>
-                </a>
-              ))}
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {accountingDocs.map((doc) => (
-                <a
-                  key={doc.id}
-                  href={doc.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2 hover:border-slate-300 hover:bg-white"
-                >
-                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-600">
-                    {doc.docKind}
-                  </div>
-                  <div className="text-sm font-bold text-slate-800 truncate">{doc.name}</div>
-                  <div className="text-xs text-slate-500 truncate">{doc.note || 'No note'}</div>
-                  <div className="text-[11px] text-slate-400">
-                    {new Date(doc.timestamp).toLocaleString()}
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
+            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={labelStyle}>Name</label>
+                <div style={box}>{client.name || '—'}</div>
+              </div>
+              <div>
+                <label style={labelStyle}>Email</label>
+                <div style={box}>{client.email || '—'}</div>
+              </div>
+              <div>
+                <label style={labelStyle}>Phone / Mobile</label>
+                <div style={box}>{client.phone || '—'}</div>
+              </div>
+              <div>
+                <label style={labelStyle}>Address</label>
+                <div style={box}>{client.address || '—'}</div>
+              </div>
 
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 mb-3">Audit history</h3>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-              {client.audit?.length === 0 && (
-                <div className="text-sm text-slate-400">No changes recorded.</div>
-              )}
-              {client.audit?.map((entry) => (
-                <div key={entry.id} className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-                  <div className="text-xs font-bold text-slate-700">{entry.summary}</div>
-                  <div className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mt-1">
-                    {new Date(entry.timestamp).toLocaleString()}
-                  </div>
+              <div>
+                <label style={labelStyle}>Status</label>
+                <div style={box}>{client.status}</div>
+              </div>
+              <div>
+                <label style={labelStyle}>Onboarding</label>
+                <div style={box}>{client.onboarding_completed ? 'Completed' : 'Incomplete'}</div>
+              </div>
+              <div>
+                <label style={labelStyle}>AI Access (master switch)</label>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <button
+                    disabled={savingAI}
+                    onClick={() => setAiAccess(!client.ai_access)}
+                    style={{
+                      background: client.ai_access ? '#22c55e' : '#ef4444',
+                      color: '#fff',
+                      padding: '10px 12px',
+                      borderRadius: 12,
+                      border: 0,
+                      fontWeight: 900,
+                      cursor: 'pointer',
+                      opacity: savingAI ? 0.7 : 1,
+                    }}
+                  >
+                    {client.ai_access ? 'AI ENABLED' : 'AI DISABLED'}
+                  </button>
+                  <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>Writes to Supabase: clients.ai_access</div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
+              </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold text-slate-900">AI assistant for accountants</h3>
-            <button className="px-3 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:border-amber-300 hover:bg-amber-50">
-              Send reminders for missing docs
-            </button>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-              <div className="text-[10px] uppercase font-black tracking-[0.25em] text-amber-600">
-                ID docs
+              <div>
+                <label style={labelStyle}>AI Services (per-service toggles)</label>
+                <div style={{ fontSize: 12, color: '#64748b', fontWeight: 800, marginBottom: 8 }}>
+                  Currently stored locally (per device). If you want these durable across devices, we’ll add DB columns/table.
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  {(['ai_chat', 'ai_legal', 'ai_translation', 'ai_analysis'] as FeatureKey[]).map((k) => (
+                    <button
+                      key={k}
+                      onClick={() => toggleFeature(k)}
+                      style={{
+                        background: features[k] ? '#0f172a' : '#fff',
+                        color: features[k] ? '#fff' : '#0f172a',
+                        border: '1px solid #e2e8f0',
+                        padding: '10px 12px',
+                        borderRadius: 12,
+                        fontWeight: 900,
+                        cursor: 'pointer',
+                        textTransform: 'uppercase',
+                        fontSize: 11,
+                        letterSpacing: '0.08em',
+                      }}
+                    >
+                      {k.replace('ai_', 'AI ')}: {features[k] ? 'ON' : 'OFF'}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="text-sm text-slate-800">{identityDocs.length} uploaded</div>
-              <div className="text-xs text-slate-500">
-                Missing:{' '}
-                {missingIdentity.length ? missingIdentity.map((m) => m.label).join(', ') : 'None'}
-              </div>
-            </div>
-            <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-              <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-700">
-                Accounting
-              </div>
-              <div className="text-sm text-slate-800">{accountingDocs.length} uploaded</div>
-              <div className="text-xs text-slate-500">
-                Missing:{' '}
-                {missingAccounting.length
-                  ? missingAccounting.map((m) => m.label).join(', ')
-                  : 'None'}
-              </div>
-            </div>
-            <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-              <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-700">
-                Latest
-              </div>
-              <div className="text-sm text-slate-800 truncate">{client.docs?.[0]?.name || '—'}</div>
-              <div className="text-[11px] text-slate-500">
-                {client.docs?.[0]
-                  ? new Date(client.docs[0].timestamp).toLocaleString()
-                  : 'No docs yet'}
-              </div>
-            </div>
-            <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
-              <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-700">
-                Audit
-              </div>
-              <div className="text-sm text-slate-800">{client.audit?.length || 0} entries</div>
-              <div className="text-xs text-slate-500">
-                Latest:{' '}
-                {client.audit?.[0] ? new Date(client.audit[0].timestamp).toLocaleString() : '—'}
+
+              <div>
+                <label style={labelStyle}>Compliance (v1)</label>
+                <div style={box}>
+                  {missingDocs.length === 0 ? 'All required docs present' : `Missing: ${missingDocs.join(', ')}`}
+                </div>
               </div>
             </div>
           </div>
-          <div className="space-y-2 text-sm text-slate-700">
-            <div className="font-bold text-slate-900">Suggested actions</div>
-            {suggestions.map((s, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <span className="text-amber-600">•</span>
-                <span>{s}</span>
-              </div>
-            ))}
-            {!suggestions.length && <div className="text-slate-500">No actions suggested.</div>}
+
+          {/* RIGHT */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ backgroundColor: '#ffffff', padding: 24, borderRadius: 18, border: '1px solid #e2e8f0' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 900, margin: 0, color: '#0f172a' }}>Document Vault</h2>
+              <div style={{ marginTop: 12, color: '#64748b', fontSize: 12, fontWeight: 800 }}>From Supabase table: documents (by client_id)</div>
+
+              {documents.length === 0 ? (
+                <div style={{ marginTop: 14, color: '#94a3b8', fontWeight: 900 }}>No documents found for this client.</div>
+              ) : (
+                <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+                  {documents.map((d) => (
+                    <div key={d.id} style={{ border: '1px solid #f1f5f9', borderRadius: 14, padding: 12, background: '#fff' }}>
+                      <div style={{ fontWeight: 900, color: '#0f172a', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                      <div style={{ marginTop: 6, fontSize: 11, fontWeight: 900, color: '#64748b' }}>{d.category} • {d.doc_kind}</div>
+                      <div style={{ marginTop: 6, fontSize: 11, color: '#64748b', fontWeight: 800 }}>Path: <span style={{ fontFamily: 'monospace' }}>{d.file_path}</span></div>
+                      {d.ai_summary && (
+                        <div style={{ marginTop: 8, fontSize: 12, color: '#0f172a', fontWeight: 800, background: '#f8fafc', border: '1px solid #e2e8f0', padding: 10, borderRadius: 12 }}>
+                          <div style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>AI Summary</div>
+                          <div style={{ marginTop: 6 }}>{d.ai_summary}</div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <button style={{ backgroundColor: '#22c55e', color: 'white', padding: 14, borderRadius: 14, border: 'none', fontWeight: 900, cursor: 'pointer' }}>APPROVE CASE</button>
+              <button style={{ backgroundColor: '#ef4444', color: 'white', padding: 14, borderRadius: 14, border: 'none', fontWeight: 900, cursor: 'pointer' }}>FLAG / REQUEST INFO</button>
+            </div>
           </div>
         </div>
       </div>

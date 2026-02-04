@@ -296,6 +296,12 @@ CREATE POLICY "Clients can upload documents" ON documents
         client_id IN (SELECT id FROM clients WHERE email = auth.jwt() ->> 'email')
     );
 
+-- Clients can delete their own documents
+CREATE POLICY "Clients can delete own documents" ON documents
+    FOR DELETE USING (
+        client_id IN (SELECT id FROM clients WHERE email = auth.jwt() ->> 'email')
+    );
+
 CREATE POLICY "Clients can view own audit log" ON audit_log
     FOR SELECT USING (
         client_id IN (SELECT id FROM clients WHERE email = auth.jwt() ->> 'email')

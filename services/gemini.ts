@@ -1,15 +1,22 @@
 import { GoogleGenAI } from '@google/genai';
 
-// Ensure we have a valid initialization, fallback to empty string to prevent constructor crash
-const API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+// IMPORTANT:
+// This file is imported in the browser bundle. `process.env` is not defined in the browser,
+// so we must access it safely.
+const API_KEY =
+  (globalThis as any)?.process?.env?.GEMINI_API_KEY ||
+  (globalThis as any)?.process?.env?.API_KEY ||
+  '';
+
+// Only initialize the SDK when a key exists.
+const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
 export const getLegalAdvice = async (query: string, category: string, language: string = 'en') => {
   if (!API_KEY) throw new Error('API Key is not configured.');
 
   const langPrompt = language === 'pt' ? 'Respond in Portuguese.' : 'Respond in English.';
 
-  const response = await ai.models.generateContent({
+  const response = await ai!.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: `Acting as a professional consultant for PLS Consultants, provide high-level, preliminary legal context for the following ${category} query.
     Use Google Search to ensure the information reflects the current 2024-2025 regulatory landscape in the UK and Portugal.
@@ -32,6 +39,7 @@ export const chatWithNoVo = async (
   history: { role: 'user' | 'model'; content: string }[],
   language: string = 'en'
 ) => {
+
   if (!API_KEY) return 'System Offline: No API Key.';
 
   const langPrompt =
@@ -46,7 +54,7 @@ export const chatWithNoVo = async (
 
   contents.push({ role: 'user', parts: [{ text: message }] });
 
-  const response = await ai.models.generateContent({
+  const response = await ai!.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents,
     config: {
@@ -54,6 +62,46 @@ export const chatWithNoVo = async (
       You help clients navigate our services (Legal, Accountancy, Translation, Business Consultancy).
       CEO: Pedro Xavier. Locations: London (Vauxhall) & Portugal.
       Be sophisticated and professional. ${langPrompt}`,
+    },
+  });
+
+  return response.text || 'No response received.';
+};
+
+export const chatWithAdminOps = async (
+  message: string,
+  history: { role: 'user' | 'model'; content: string }[],
+  language: string = 'en'
+) => {
+  if (!API_KEY) return 'System Offline: No API Key.';
+
+  const langPrompt = language === 'pt' ? 'Responda em Português.' : 'Respond in English.';
+
+  const contents = history.map((h) => ({
+    role: h.role,
+    parts: [{ text: h.content }],
+  }));
+
+  contents.push({ role: 'user', parts: [{ text: message }] });
+
+  const response = await ai!.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents,
+    config: {
+      systemInstruction: `You are the internal Admin & Operations assistant for the PLS Client Portal.
+
+You know the system structure and can answer questions about what exists and what can be built next.
+
+Current Supabase tables (known): clients, documents, invoices, services, users, audit_log, ai_consultations, document_requests, communications.
+
+Admin goals:
+- Help an accountant/admin understand workflows (client onboarding, docs, invoices, services).
+- Suggest database tables/columns/pages in a practical way.
+- When proposing changes, give concrete steps and minimal-risk approach.
+
+Be clear, practical, and concise. If the user asks for building new tables/pages, propose a schema + UI endpoints.
+${langPrompt}`,
+      temperature: 0.2,
     },
   });
 
@@ -86,7 +134,7 @@ export const translateDocument = async (
     });
   }
 
-  const response = await ai.models.generateContent({
+  const response = await ai!.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: [{ parts }],
     config: {
@@ -112,7 +160,7 @@ export const analyzeImage = async (
     userPrompt || 'General analysis.'
   }`;
 
-  const response = await ai.models.generateContent({
+  const response = await ai!.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: {
       parts: [{ inlineData: { mimeType: 'image/jpeg', data: imageBase64 } }, { text: prompt }],

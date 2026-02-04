@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
@@ -14,14 +14,7 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const { signIn, bypassLogin } = useAuth();
-
-  const handleBypass = () => {
-    // Temporary bypass for testing
-    console.log('🚀 Bypassing login for testing');
-    bypassLogin();
-    navigate('/client');
-  };
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,24 +22,9 @@ const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(
-          () =>
-            reject(
-              new Error(
-                'Login timeout - please wait 60 minutes and try again. You may have hit the rate limit.'
-              )
-            ),
-          10000
-        )
-      );
-
-      await Promise.race([signIn(email, password), timeoutPromise]);
-
+      await signIn(email, password);
       navigate('/client');
     } catch (err: any) {
-      console.error('Login error:', err);
       setError(err.message || 'Invalid email or password');
     } finally {
       setLoading(false);
@@ -60,8 +38,12 @@ const LoginPage: React.FC = () => {
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-[0.25em]">
             Client Portal
           </div>
-          <h1 className="text-4xl font-bold text-slate-900 mt-4 font-serif italic">Welcome back</h1>
-          <p className="text-slate-600 mt-3">Sign in to access your secure portal</p>
+          <h1 className="text-4xl font-bold text-slate-900 mt-4 font-serif italic">
+            Welcome back
+          </h1>
+          <p className="text-slate-600 mt-3">
+            Sign in to access your secure portal
+          </p>
         </div>
 
         <form
@@ -108,14 +90,6 @@ const LoginPage: React.FC = () => {
             className="w-full bg-slate-900 text-amber-500 font-bold py-4 rounded-xl hover:bg-slate-800 transition-all shadow-lg disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleBypass}
-            className="w-full bg-amber-500 text-slate-900 font-bold py-4 rounded-xl hover:bg-amber-600 transition-all shadow-lg"
-          >
-            🚀 Bypass Login (Testing Only)
           </button>
 
           <div className="text-center text-sm text-slate-500">
