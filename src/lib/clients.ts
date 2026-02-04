@@ -132,32 +132,17 @@ export const uploadDocument = async (
 };
 
 export const deleteDocument = async (docId: string, clientId: string): Promise<void> => {
-  // Get document first to get file path
-  const { data: doc, error: fetchError } = await supabase
-    .from('documents')
-    .select('*')
-    .eq('id', docId)
-    .single();
-  
-  if (fetchError) throw fetchError;
-  
-  // Delete from storage
-  const { error: storageError } = await supabase.storage
-    .from('documents')
-    .remove([doc.file_path]);
-  
-  if (storageError) console.error('Storage delete error:', storageError);
-  
-  // Delete record
-  const { error } = await supabase
-    .from('documents')
-    .delete()
-    .eq('id', docId);
-  
+  // Use a SECURITY DEFINER RPC so deletes don't silently no-op under RLS.
+  // The function should delete both the DB row and the storage object.
+  const { error } = await supabase.rpc('delete_document', { p_id: docId });
   if (error) throw error;
-  
-  // Log audit
-  await logAudit(clientId, 'document_deleted', `Deleted ${doc.name}`);
+
+  // Log audit (best-effort; don't fail delete if audit insert fails)
+  try {
+    await logAudit(clientId, 'document_deleted', `Deleted document ${docId}`);
+  } catch (e) {
+    console.error('Audit log error:', e);
+  }
 };
 
 export const getDocumentUrl = async (filePath: string): Promise<string> => {

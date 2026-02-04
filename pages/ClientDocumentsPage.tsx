@@ -1,819 +1,399 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { createClient } from '@supabase/supabase-js';
 
-type UploadedDoc = {
-  id: string;
-  name: string;
-  size: number;
-  category: 'identity' | 'accounting';
-  timestamp: string;
-  url: string;
-  isImage: boolean;
-  docKind: 'passport' | 'driver_license' | 'bank_statement' | 'compliance' | 'expenses' | 'other';
-  note: string;
-  data?: string;
-  mime?: string;
-};
+const supabaseUrl = 'https://ivrnnzubplghzizefmjw.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cm5uenVicGxnaHppemVmbWp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzgwMjYsImV4cCI6MjA4NDkxNDAyNn0.XSzX8a7d8qJTrvuiiD1KEhGG2v1lKKybkv3R24_yZz4';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-type ClientRecord = {
-  profile: { name: string; email: string; address: string; phone: string };
-  docs: UploadedDoc[];
-  audit: { id: string; summary: string; timestamp: string }[];
-  updatedAt: string;
-};
+// Use same-origin so uploads work even when non-standard ports are blocked
+const UPLOAD_API_BASE = (typeof window !== 'undefined' && window.location?.origin) ? window.location.origin : 'http://77.42.79.205';
 
 const ClientDocumentsPage: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [identityKind, setIdentityKind] = useState<UploadedDoc['docKind']>('passport');
-  const [accountingKind, setAccountingKind] = useState<UploadedDoc['docKind']>('bank_statement');
-  const [docs, setDocs] = useState<UploadedDoc[]>([]);
-  const [audit, setAudit] = useState<{ id: string; summary: string; timestamp: string }[]>([]);
-  const [profile, setProfile] = useState<ClientRecord['profile'] | null>(null);
-  const replaceInputRef = useRef<HTMLInputElement>(null);
-  const objectUrlsRef = useRef<string[]>([]);
-  const [replaceTarget, setReplaceTarget] = useState<UploadedDoc | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'thumbnail'>('list');
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<any>(null);
+    const [activeCategory, setActiveCategory] = useState<string | null>(null);
+    const [documents, setDocuments] = useState<any[]>([]);
+    
+    const passportInputRef = useRef<HTMLInputElement>(null);
+    const licenseInputRef = useRef<HTMLInputElement>(null);
+    const categoryInputRef = useRef<HTMLInputElement>(null);
+    const [uploadTargetCat, setUploadTargetCat] = useState<any>(null);
 
-  const portalEmail = useMemo(() => {
-    try {
-      return localStorage.getItem('pls_portal_email') || (location.state as any)?.email || '';
-    } catch {
-      return '';
-    }
-  }, [location.state]);
+    const [clientId, setClientId] = useState<string | null>(null);
 
-  useMemo(() => {
-    if (!portalEmail) return;
+    useEffect(() => {
+        let isMounted = true;
+        async function init() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user && isMounted) {
+                    setUser(session.user);
 
-    // Load from localStorage first (for metadata)
-    try {
-      const raw = localStorage.getItem('pls_clients');
-      const parsed = raw ? JSON.parse(raw) : {};
-      const rec: ClientRecord | undefined = parsed[portalEmail];
-      if (rec) {
-        setDocs(rec.docs || []);
-        setAudit(rec.audit || []);
-        setProfile(rec.profile || null);
-      }
-    } catch (err) {
-      console.error('Load client documents from localStorage failed', err);
-    }
+                    // Map auth user -> clients row via email
+                    const email = session.user.email;
+                    if (email) {
+                        const { data: clientRow, error: cErr } = await supabase
+                            .from('clients')
+                            .select('id')
+                            .eq('email', email)
+                            .maybeSingle();
+                        if (cErr) throw cErr;
+                        if (clientRow?.id) {
+                            setClientId(clientRow.id);
 
-    // Note: We don't need to fetch from backend separately because
-    // the docs in localStorage already contain the URLs to backend files.
-    // The metadata (category, docKind) is stored in localStorage only.
-  }, [portalEmail]);
+                            // Load documents from DB (cross-browser)
+                            const { data: docs, error: dErr } = await supabase
+                                .from('documents')
+                                .select('id, name, category, doc_kind, file_path, uploaded_at, mime_type, file_size')
+                                .eq('client_id', clientRow.id)
+                                .order('uploaded_at', { ascending: false });
+                            if (dErr) throw dErr;
 
-  const persist = (nextDocs: UploadedDoc[], nextAudit = audit) => {
-    if (!portalEmail) return;
-    try {
-      const key = 'pls_clients';
-      const raw = localStorage.getItem(key);
-      const parsed = raw ? JSON.parse(raw) : {};
-      const record: ClientRecord = {
-        profile: profile || { name: '', email: portalEmail, address: '', phone: '' },
-        docs: nextDocs,
-        audit: nextAudit,
-        updatedAt: new Date().toISOString(),
-      };
-      parsed[portalEmail] = record;
-      localStorage.setItem(key, JSON.stringify(parsed));
-    } catch (err) {
-      console.error('Persist failed', err);
-    }
-  };
+                            const mapped = (docs || []).map((d: any) => {
+                                // Map DB category/doc_kind -> UI categories
+                                let uiCategory = 'OTHER';
+                                let subCategory: any = undefined;
+                                if (d.category === 'identity') {
+                                    uiCategory = 'IDENTITY';
+                                    if (d.doc_kind === 'passport') subCategory = 'PASSPORT';
+                                    if (d.doc_kind === 'driver_license') subCategory = 'LICENSE';
+                                } else if (d.doc_kind === 'bank_statement') uiCategory = 'BANK';
+                                else if (d.doc_kind === 'compliance') uiCategory = 'COMPLIANCE';
+                                else if (d.doc_kind === 'expenses') uiCategory = 'EXPENSES';
+                                else uiCategory = 'OTHER';
 
-  const logChange = (summary: string) => {
-    setAudit((prev) => {
-      const next = [
-        { id: crypto.randomUUID(), summary, timestamp: new Date().toISOString() },
-        ...prev,
-      ];
-      persist(docs, next);
-      return next;
-    });
-  };
+                                const storagePath = String(d.file_path || '').replace(/^\/+/, '');
+                                const mime = String(d.mime_type || '').toLowerCase();
+                                const isImage = mime.startsWith('image/');
 
-  const formatSize = (size: number) => {
-    if (size < 1024) return `${size} B`;
-    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-  };
+                                return {
+                                    id: d.id,
+                                    name: d.name,
+                                    category: uiCategory,
+                                    subCategory,
+                                    uploadDate: d.uploaded_at ? new Date(d.uploaded_at).toLocaleString() : '',
+                                    storagePath,
+                                    url: null as string | null,
+                                    // Only show actual thumbnails for IDENTITY images (passport/licence). Everything else uses an icon.
+                                    thumbnail: '📄' as any,
+                                    _needsSigned: uiCategory === 'IDENTITY' && isImage,
+                                };
+                            });
 
-  const readFileAsDataURL = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+                            // For identity images, generate signed URLs so previews work (private bucket)
+                            const withUrls = await Promise.all(
+                                mapped.map(async (m: any) => {
+                                    if (!m?._needsSigned || !m.storagePath) return m;
+                                    try {
+                                        const { data: s, error: sErr } = await supabase
+                                            .storage
+                                            .from('documents')
+                                            .createSignedUrl(m.storagePath, 60 * 60);
+                                        if (sErr) throw sErr;
+                                        const u = s?.signedUrl || null;
+                                        return { ...m, url: u, thumbnail: u || '📄' };
+                                    } catch {
+                                        return m;
+                                    }
+                                })
+                            );
 
-  const handleUpload = async (
-    category: UploadedDoc['category'],
-    fileList: FileList | null,
-    docKind: UploadedDoc['docKind']
-  ) => {
-    if (!fileList || fileList.length === 0) return;
-    const files = Array.from(fileList);
+                            setDocuments(withUrls);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        }
+        init();
+        return () => { isMounted = false; };
+    }, []);
 
-    // Upload files to backend instead of storing in localStorage
-    const uploadPromises = files.map(async (file) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('clientId', portalEmail);
-      formData.append('filename', file.name);
+    const saveVault = (newDocs: any[]) => {
+        // Local state only now; DB is source of truth.
+        setDocuments(newDocs);
+    };
 
-      try {
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error('Upload failed');
+    const handleFileUpload = (category: string, sub?: 'PASSPORT' | 'LICENSE') => async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!user) {
+            alert('You are not logged in. Please log in again.');
+            return;
         }
 
-        const result = await response.json();
+        try {
+            if (!clientId) throw new Error('Client record not found (client mapping failed)');
 
-        return {
-          id: crypto.randomUUID(),
-          name: file.name,
-          size: file.size,
-          category,
-          timestamp: new Date().toISOString(),
-          url: result.url,
-          data: result.url, // Store URL instead of base64
-          mime: file.type,
-          isImage: file.type.startsWith('image/'),
-          docKind,
-          note: '',
-        };
-      } catch (err) {
-        console.error('Upload failed for', file.name, err);
-        return null;
-      }
-    });
+            // Upload to Supabase Storage (bucket: documents)
+            const categoryFolder = category || 'OTHER';
+            const safeName = file.name.replace(/\s+/g, ' ').trim();
+            const objectPath = `${clientId}/${categoryFolder}/${Date.now()}-${safeName}`;
 
-    const uploadedEntries = (await Promise.all(uploadPromises)).filter(
-      (e): e is UploadedDoc => e !== null
-    );
+            const { error: upErr } = await supabase
+                .storage
+                .from('documents')
+                .upload(objectPath, file, { contentType: file.type || undefined, upsert: false });
+            if (upErr) throw upErr;
 
-    if (uploadedEntries.length === 0) {
-      alert('All uploads failed. Please try again.');
-      return;
-    }
+            // Create signed URL for immediate preview (identity images only)
+            let signedUrl: string | null = null;
+            if (category === 'IDENTITY' && (file.type || '').toLowerCase().startsWith('image/')) {
+                const { data: s, error: sErr } = await supabase
+                    .storage
+                    .from('documents')
+                    .createSignedUrl(objectPath, 60 * 60); // 1 hour
+                if (sErr) throw sErr;
+                signedUrl = s?.signedUrl || null;
+            }
 
-    setDocs((prev) => {
-      let next = [...prev];
-      if (category === 'identity') {
-        next = next.filter((d) => !(d.category === 'identity' && d.docKind === docKind));
-      }
-      next = [...uploadedEntries, ...next];
-      persist(next, audit);
-      logChange(`Uploaded ${uploadedEntries.length} file(s) to ${category} (${docKind})`);
-      return next;
-    });
-  };
+            // Map UI category/sub -> DB category/doc_kind
+            let dbCategory: 'identity' | 'accounting' | 'other' = 'other';
+            let docKind: string = 'other';
 
-  const updateNote = (id: string, value: string) => {
-    setDocs((prev) => {
-      const next = prev.map((d) => (d.id === id ? { ...d, note: value } : d));
-      persist(next, audit);
-      return next;
-    });
-  };
+            if (category === 'IDENTITY') {
+                dbCategory = 'identity';
+                docKind = sub === 'PASSPORT' ? 'passport' : 'driver_license';
+            } else if (category === 'BANK') {
+                dbCategory = 'accounting';
+                docKind = 'bank_statement';
+            } else if (category === 'COMPLIANCE') {
+                dbCategory = 'accounting';
+                docKind = 'compliance';
+            } else if (category === 'EXPENSES') {
+                dbCategory = 'accounting';
+                docKind = 'expenses';
+            } else {
+                dbCategory = 'other';
+                docKind = 'other';
+            }
 
-  const triggerReplace = (doc: UploadedDoc) => {
-    setReplaceTarget(doc);
-    replaceInputRef.current?.click();
-  };
+            // Insert metadata row (cross-browser)
+            const { data: inserted, error: insErr } = await supabase
+                .from('documents')
+                .insert({
+                    client_id: clientId,
+                    name: file.name,
+                    category: dbCategory,
+                    doc_kind: docKind,
+                    // Store Supabase Storage object path in file_path
+                    file_path: objectPath,
+                    file_size: file.size,
+                    mime_type: file.type || null,
+                })
+                .select('id, uploaded_at')
+                .single();
+            if (insErr) throw insErr;
 
-  const handleReplace = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !replaceTarget) return;
-    const file = files[0];
+            const isImage = (file.type || '').toLowerCase().startsWith('image/');
 
-    // Upload to backend instead of storing in localStorage
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('clientId', portalEmail);
-    formData.append('filename', file.name);
+            const newDoc = {
+                id: inserted?.id || Math.random().toString(36).substr(2, 9),
+                name: file.name,
+                category,
+                subCategory: sub,
+                uploadDate: inserted?.uploaded_at ? new Date(inserted.uploaded_at).toLocaleString() : new Date().toLocaleString(),
+                storagePath: objectPath,
+                url: signedUrl, // may be null
+                // Only show actual thumbnails for IDENTITY images (passport/licence). Everything else uses an icon.
+                thumbnail: (category === 'IDENTITY' && isImage && signedUrl) ? signedUrl : '📄'
+            };
 
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const result = await response.json();
-
-      const updated: UploadedDoc = {
-        ...replaceTarget,
-        id: crypto.randomUUID(),
-        name: file.name,
-        size: file.size,
-        timestamp: new Date().toISOString(),
-        url: result.url,
-        data: result.url, // Store URL instead of base64
-        mime: file.type,
-        isImage: file.type.startsWith('image/'),
-      };
-
-      setDocs((prev) => {
-        const next = prev.map((d) => (d.id === replaceTarget.id ? updated : d));
-        persist(next, audit);
-        logChange(`Replaced ${replaceTarget.name} with ${file.name}`);
-        return next;
-      });
-      setReplaceTarget(null);
-      e.target.value = '';
-    } catch (err) {
-      console.error('Replace upload failed', err);
-      alert('Failed to upload replacement file. Please try again.');
-      e.target.value = '';
-    }
-  };
-
-  React.useEffect(() => {
-    return () => {
-      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+            const updated = [...documents.filter(d => !(sub && d.category === 'IDENTITY' && d.subCategory === sub)), newDoc];
+            saveVault(updated);
+        } catch (err: any) {
+            console.error(err);
+            alert(err?.message || 'Upload failed.');
+        } finally {
+            e.target.value = '';
+        }
     };
-  }, []);
 
-  const identityDocs = docs.filter((d) => d.category === 'identity');
-  const accountingDocs = docs.filter((d) => d.category === 'accounting');
+    const getIdentityDoc = (tag: string) => documents.find(d => d.category === 'IDENTITY' && d.subCategory === tag);
+    const getCount = (cat: string) => documents.filter(d => d.category === cat).length;
 
-  const identityTypes: { key: UploadedDoc['docKind']; label: string }[] = [
-    { key: 'passport', label: 'Passport' },
-    { key: 'driver_license', label: 'Driver Licence' },
-  ];
+    const categories = [
+        { label: 'BANK', color: '#86efac', cat: 'BANK', icon: '🏦' },
+        { label: 'COMPLIANCE', color: '#fca5a5', cat: 'COMPLIANCE', icon: '⚖️' },
+        { label: 'EXPENSES', color: '#fef08a', cat: 'EXPENSES', icon: '💰' },
+        { label: 'OTHER', color: '#93c5fd', cat: 'OTHER', icon: '📂' }
+    ];
 
-  const accountingTypes: { key: UploadedDoc['docKind']; label: string }[] = [
-    { key: 'bank_statement', label: 'Bank statement' },
-    { key: 'compliance', label: 'Compliance documents' },
-    { key: 'expenses', label: 'Expenses' },
-    { key: 'other', label: 'Other' },
-  ];
+    if (loading) return null;
 
-  if (!portalEmail) {
     return (
-      <div className="bg-slate-50 py-14">
-        <div className="max-w-4xl mx-auto px-6 text-center space-y-4">
-          <h1 className="text-3xl font-bold text-slate-900">Portal access required</h1>
-          <p className="text-slate-600">Please sign in to manage documents.</p>
-          <button
-            className="px-6 py-3 bg-slate-900 text-amber-500 font-bold rounded-xl shadow hover:bg-slate-800"
-            onClick={() => navigate('/')}
-          >
-            Go to sign in
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-slate-50 py-8 pt-12">
-      <div className="max-w-6xl mx-auto px-6 space-y-4">
-        <input type="file" ref={replaceInputRef} className="hidden" onChange={handleReplace} />
-
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold" style={{ paddingTop: '30px' }}>
-              <span className="text-amber-600">Client documents</span>
-              <span style={{ marginLeft: '30px' }} className="text-slate-900">
-                {profile?.name || portalEmail}
-              </span>
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Upload all your documents to be held securely here
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/client')}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
-            >
-              <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">
-                ←
-              </span>
-              Back to portal
-            </button>
-            <button
-              onClick={() => navigate('/')}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
-            >
-              <span className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center">
-                🏠
-              </span>
-              Back to website
-            </button>
-          </div>
-        </div>
-
-        {/* Identity Documents - Full Width */}
-        <div className="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
-          <div className="grid sm:grid-cols-2 gap-4">
-            {identityTypes.map((type) => {
-              const match = identityDocs.find((d) => d.docKind === type.key);
-              return (
-                <div
-                  key={type.key}
-                  className="p-4 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2"
-                >
-                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
-                    {type.label}
-                    {match ? (
-                      <span className="text-green-600">Uploaded</span>
-                    ) : (
-                      <span className="text-slate-400">Missing</span>
-                    )}
-                  </div>
-                  {match ? (
-                    <>
-                      <a
-                        href={match.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="min-w-0 hover:text-amber-700 flex flex-col gap-2"
-                      >
-                        <div className="w-full aspect-[7/4] rounded-xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
-                          {match.isImage ? (
-                            <img
-                              src={match.url}
-                              alt={match.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="text-2xl">📄</div>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-sm font-bold text-slate-800 truncate">
-                            {match.name}
-                          </div>
-                          <div className="text-[11px] text-slate-400 truncate">
-                            {formatSize(match.size)} • {new Date(match.timestamp).toLocaleString()}
-                          </div>
-                        </div>
-                      </a>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={match.note}
-                          onChange={(e) => updateNote(match.id, e.target.value)}
-                          placeholder="Add a note"
-                          className="w-full text-[11px] text-slate-700 border border-slate-200 rounded px-2 py-1"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => triggerReplace(match)}
-                          className="text-[11px] font-bold text-amber-700 underline"
-                        >
-                          Reupload
+        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: "Arial, sans-serif" }}>
+            <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '110px 24px 32px 24px', width: '100%', boxSizing: 'border-box' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingLeft: '10px' }}>
+                    <div style={{ flex: '1' }}>
+                        <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#0f172a', margin: '0', display: 'flex', alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+                            <span>Client Portal</span>
+                            <span style={{ color: '#c5a059', marginLeft: '16px' }}>Master Secure Workspace</span>
+                        </h1>
+                        <p style={{ color: '#64748b', margin: '8px 0 0 15px', fontSize: '14px', fontWeight: 'bold' }}>manage your profile , upload all your documents</p>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '140px 140px 110px', gap: '8px', paddingTop: '4px' }}>
+                        <div style={{ width: '140px' }}></div> 
+                        <button onClick={() => navigate('/client')} style={{ backgroundColor: '#c5a059', color: '#ffffff', padding: '10px 0', borderRadius: '10px', border: 'none', fontWeight: '800', fontSize: '14px', cursor: 'pointer', height: '44px' }}>
+                            Back to portal
                         </button>
-                      </div>
-                    </>
-                  ) : (
-                    <label className="cursor-pointer">
-                      <div className="w-full aspect-[7/4] rounded-xl bg-white border-2 border-dashed border-slate-200 hover:border-amber-400 overflow-hidden flex flex-col items-center justify-center gap-2 transition-colors">
-                        <div className="text-3xl">📤</div>
-                        <div className="text-xs font-bold text-slate-600">Upload {type.label}</div>
-                      </div>
-                      <input
-                        type="file"
-                        className="hidden"
-                        multiple
-                        accept="image/*,.pdf"
-                        onChange={(e) => handleUpload('identity', e.target.files, type.key)}
-                      />
-                    </label>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Accounting Documents - Full Width */}
-        <div className="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600 mb-1">
-                Accounting documents
-              </div>
-              <div className="text-sm text-slate-500">
-                Upload statements, compliance docs, expenses.
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setViewMode(viewMode === 'list' ? 'thumbnail' : 'list')}
-                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
-                title={viewMode === 'list' ? 'Switch to thumbnail view' : 'Switch to list view'}
-              >
-                {viewMode === 'list' ? '🖼️ Thumbnails' : '📋 List'}
-              </button>
-              <select
-                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold"
-                value={accountingKind}
-                onChange={(e) => setAccountingKind(e.target.value as UploadedDoc['docKind'])}
-              >
-                {accountingTypes.map((t) => (
-                  <option key={t.key} value={t.key}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-              <label className="px-3 py-2 bg-slate-900 text-amber-500 rounded-lg text-sm font-semibold cursor-pointer border border-slate-800">
-                Upload
-                <input
-                  type="file"
-                  className="hidden"
-                  multiple
-                  onChange={(e) => handleUpload('accounting', e.target.files, accountingKind)}
-                />
-              </label>
-            </div>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {accountingTypes.map((type) => {
-              const matches = accountingDocs.filter((d) => d.docKind === type.key);
-              const filled = matches.length > 0;
-              return (
-                <div
-                  key={type.key}
-                  className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2"
-                >
-                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-slate-700">
-                    {type.label}
-                    {filled ? (
-                      <span className="text-green-600">{matches.length} file(s)</span>
-                    ) : (
-                      <span className="text-slate-400">Missing</span>
-                    )}
-                  </div>
-                  {filled ? (
-                    matches.map((doc) => (
-                      <div
-                        key={doc.id}
-                        className="border border-slate-100 rounded-lg p-2 bg-white flex flex-col gap-2"
-                      >
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="min-w-0 hover:text-amber-700 flex flex-col gap-2"
-                        >
-                          <div
-                            className={`rounded-lg bg-white border border-slate-100 overflow-hidden flex items-center justify-center ${viewMode === 'thumbnail' ? 'w-full aspect-[4/3]' : 'w-full aspect-[7/4]'}`}
-                          >
-                            {doc.isImage ? (
-                              <img
-                                src={doc.url}
-                                alt={doc.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="text-2xl">📄</div>
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-sm font-bold text-slate-800 truncate">
-                              {doc.name}
-                            </div>
-                            <div className="text-[11px] text-slate-400 truncate">
-                              {formatSize(doc.size)} • {new Date(doc.timestamp).toLocaleString()}
-                            </div>
-                          </div>
-                        </a>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={doc.note}
-                            onChange={(e) => updateNote(doc.id, e.target.value)}
-                            placeholder="Add a note"
-                            className="w-full text-[11px] text-slate-700 border border-slate-200 rounded px-2 py-1"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => triggerReplace(doc)}
-                            className="text-[11px] font-bold text-slate-800 underline"
-                          >
-                            Reupload
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-xs text-slate-500">No files uploaded yet.</div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-4 space-y-6">
-            <div className="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-slate-900">AI tools</h3>
-                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                  Client access only
-                </div>
-              </div>
-              <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
-                <Link
-                  to="/ai/legal"
-                  className="p-4 border border-slate-100 rounded-xl hover:border-amber-200 hover:bg-amber-50/40 transition-colors shadow-sm"
-                >
-                  <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">
-                    Legal
-                  </div>
-                  <div className="mt-2 font-bold text-slate-900">AI Legal Guidance</div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    Grounded legal context for UK/PT.
-                  </div>
-                </Link>
-                <Link
-                  to="/ai/translation"
-                  className="p-4 border border-slate-100 rounded-xl hover:border-amber-200 hover:bg-amber-50/40 transition-colors shadow-sm"
-                >
-                  <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">
-                    Linguistics
-                  </div>
-                  <div className="mt-2 font-bold text-slate-900">Document Translation</div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    Certified-style EN↔PT translation.
-                  </div>
-                </Link>
-                <Link
-                  to="/ai/analysis"
-                  className="p-4 border border-slate-100 rounded-xl hover:border-amber-200 hover:bg-amber-50/40 transition-colors shadow-sm"
-                >
-                  <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">
-                    Imaging
-                  </div>
-                  <div className="mt-2 font-bold text-slate-900">Image Analysis</div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    Upload evidence for structured insight.
-                  </div>
-                </Link>
-                <Link
-                  to="/ai/chat"
-                  className="p-4 border border-slate-100 rounded-xl hover:border-amber-200 hover:bg-amber-50/40 transition-colors shadow-sm"
-                >
-                  <div className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600">
-                    Concierge
-                  </div>
-                  <div className="mt-2 font-bold text-slate-900">NoVo AI Chat</div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    Route requests and get quick answers.
-                  </div>
-                </Link>
-              </div>
-            </div>
-
-            <div className="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm">
-              <h3 className="text-lg font-bold text-slate-900 mb-3">Audit history</h3>
-              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                {audit.length === 0 && (
-                  <div className="text-sm text-slate-400">No changes recorded yet.</div>
-                )}
-                {audit.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="p-3 rounded-xl border border-slate-100 bg-slate-50"
-                  >
-                    <div className="text-xs font-bold text-slate-700">{entry.summary}</div>
-                    <div className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mt-1">
-                      {new Date(entry.timestamp).toLocaleString()}
+                        <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/#client-portal'; }} style={{ backgroundColor: 'white', color: '#64748b', padding: '10px 0', borderRadius: '10px', border: '1px solid #e2e8f0', fontWeight: '800', fontSize: '14px', cursor: 'pointer', height: '44px' }}>
+                            Logout
+                        </button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-end mb-4">
-              <div className="bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl">
-                <div className="text-xs text-slate-500 mb-1">Signed in as</div>
-                <div className="text-sm font-semibold text-slate-900">{portalEmail}</div>
-              </div>
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-1 gap-3">
-              {identityTypes.map((type) => {
-                const match = identityDocs.find((d) => d.docKind === type.key);
-                return (
-                  <div
-                    key={type.key}
-                    className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2"
-                  >
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
-                      {type.label}
-                      {match ? (
-                        <span className="text-green-600">Uploaded</span>
-                      ) : (
-                        <span className="text-slate-400">Missing</span>
-                      )}
-                    </div>
-                    {match ? (
-                      <>
-                        <a
-                          href={match.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="min-w-0 hover:text-amber-700 flex flex-col gap-2"
-                        >
-                          <div className="w-full aspect-[7/4] rounded-xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
-                            {match.isImage ? (
-                              <img
-                                src={match.url}
-                                alt={match.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="text-2xl">📄</div>
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-sm font-bold text-slate-800 truncate">
-                              {match.name}
-                            </div>
-                            <div className="text-[11px] text-slate-400 truncate">
-                              {formatSize(match.size)} •{' '}
-                              {new Date(match.timestamp).toLocaleString()}
-                            </div>
-                          </div>
-                        </a>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={match.note}
-                            onChange={(e) => updateNote(match.id, e.target.value)}
-                            placeholder="Add a note"
-                            className="w-full text-[11px] text-slate-700 border border-slate-200 rounded px-2 py-1"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => triggerReplace(match)}
-                            className="text-[11px] font-bold text-amber-700 underline"
-                          >
-                            Reupload
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <label className="cursor-pointer">
-                        <div className="w-full aspect-[7/4] rounded-xl bg-white border-2 border-dashed border-slate-200 hover:border-amber-400 overflow-hidden flex flex-col items-center justify-center gap-2 transition-colors">
-                          <div className="text-3xl">📤</div>
-                          <div className="text-xs font-bold text-slate-600">
-                            Upload {type.label}
-                          </div>
-                        </div>
-                        <input
-                          type="file"
-                          className="hidden"
-                          multiple
-                          accept="image/*,.pdf"
-                          onChange={(e) => handleUpload('identity', e.target.files, type.key)}
-                        />
-                      </label>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-700">
-                  Accounting documents
                 </div>
-                <div className="text-sm text-slate-500">
-                  Upload statements, compliance docs, expenses.
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setViewMode(viewMode === 'list' ? 'thumbnail' : 'list')}
-                  className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
-                  title={viewMode === 'list' ? 'Switch to thumbnail view' : 'Switch to list view'}
-                >
-                  {viewMode === 'list' ? '🖼️ Thumbnails' : '📋 List'}
-                </button>
-                <select
-                  className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold"
-                  value={accountingKind}
-                  onChange={(e) => setAccountingKind(e.target.value as UploadedDoc['docKind'])}
-                >
-                  {accountingTypes.map((t) => (
-                    <option key={t.key} value={t.key}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-                <label className="px-3 py-2 bg-slate-900 text-amber-500 rounded-lg text-sm font-semibold cursor-pointer border border-slate-800">
-                  Upload
-                  <input
-                    type="file"
-                    className="hidden"
-                    multiple
-                    onChange={(e) => handleUpload('accounting', e.target.files, accountingKind)}
-                  />
-                </label>
-              </div>
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {accountingTypes.map((type) => {
-                const matches = accountingDocs.filter((d) => d.docKind === type.key);
-                const filled = matches.length > 0;
-                return (
-                  <div
-                    key={type.key}
-                    className="p-3 border border-slate-100 rounded-xl bg-slate-50 flex flex-col gap-2"
-                  >
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-slate-700">
-                      {type.label}
-                      {filled ? (
-                        <span className="text-green-600">{matches.length} file(s)</span>
-                      ) : (
-                        <span className="text-slate-400">Missing</span>
-                      )}
-                    </div>
-                    {filled ? (
-                      matches.map((doc) => (
-                        <div
-                          key={doc.id}
-                          className="border border-slate-100 rounded-lg p-2 bg-white flex flex-col gap-2"
-                        >
-                          <a
-                            href={doc.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="min-w-0 hover:text-amber-700 flex flex-col gap-2"
-                          >
-                            <div
-                              className={`rounded-lg bg-white border border-slate-100 overflow-hidden flex items-center justify-center ${viewMode === 'thumbnail' ? 'w-full aspect-[4/3]' : 'w-full aspect-[7/4]'}`}
-                            >
-                              {doc.isImage ? (
-                                <img
-                                  src={doc.url}
-                                  alt={doc.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="text-2xl">📄</div>
-                              )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '24px', marginTop: '48px' }}>
+                    <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '40px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                        <h2 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '32px', color: '#0f172a' }}>Identity Documents</h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ border: '1px solid #f1f5f9', borderRadius: '16px', height: '180px', overflow: 'hidden', backgroundColor: '#fcfcfc', marginBottom: '16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                    {getIdentityDoc('PASSPORT') ? <img src={getIdentityDoc('PASSPORT').thumbnail} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <span style={{fontSize:'40px', opacity:0.1}}>Passport</span>}
+                                </div>
+                                <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '12px', color: '#0f172a' }}>Passport.png</div>
+                                <button onClick={() => passportInputRef.current?.click()} style={{ width:'100%', padding:'12px', backgroundColor:'#0f172a', color:'white', borderRadius:'10px', border:'none', cursor:'pointer', fontWeight: 'bold', fontSize: '14px' }}>UPLOAD PASSPORT</button>
+                                <input type="file" ref={passportInputRef} style={{display:'none'}} onChange={handleFileUpload('IDENTITY', 'PASSPORT')} />
                             </div>
-                            <div className="min-w-0">
-                              <div className="text-sm font-bold text-slate-800 truncate">
-                                {doc.name}
-                              </div>
-                              <div className="text-[11px] text-slate-400 truncate">
-                                {formatSize(doc.size)} • {new Date(doc.timestamp).toLocaleString()}
-                              </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ border: '1px solid #f1f5f9', borderRadius: '16px', height: '180px', overflow: 'hidden', backgroundColor: '#fcfcfc', marginBottom: '16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                    {getIdentityDoc('LICENSE') ? <img src={getIdentityDoc('LICENSE').thumbnail} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <span style={{fontSize:'40px', opacity:0.1}}>License</span>}
+                                </div>
+                                <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '12px', color: '#0f172a' }}>Drivers Licence.png</div>
+                                <button onClick={() => licenseInputRef.current?.click()} style={{ width:'100%', padding:'12px', backgroundColor:'#0f172a', color:'white', borderRadius:'10px', border:'none', cursor:'pointer', fontWeight: 'bold', fontSize: '14px' }}>UPLOAD LICENCE</button>
+                                <input type="file" ref={licenseInputRef} style={{display:'none'}} onChange={handleFileUpload('IDENTITY', 'LICENSE')} />
                             </div>
-                          </a>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={doc.note}
-                              onChange={(e) => updateNote(doc.id, e.target.value)}
-                              placeholder="Add a note"
-                              className="w-full text-[11px] text-slate-700 border border-slate-200 rounded px-2 py-1"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => triggerReplace(doc)}
-                              className="text-[11px] font-bold text-slate-800 underline"
-                            >
-                              Reupload
-                            </button>
-                          </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-xs text-slate-500">No files uploaded yet.</div>
-                    )}
-                  </div>
-                );
-              })}
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {categories.map(item => (
+                            <div key={item.label} style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                    <div style={{ width: '50px', height: '50px', backgroundColor: item.color, borderRadius: '12px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px' }}>{item.icon}</div>
+                                    <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>{item.label}</span>
+                                </div>
+                                <button onClick={() => { setUploadTargetCat(item.cat); categoryInputRef.current?.click(); }} style={{ backgroundColor: '#0f172a', color: 'white', padding: '10px 30px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>UPLOAD</button>
+                            </div>
+                        ))}
+                        <input type="file" ref={categoryInputRef} style={{display:'none'}} onChange={(e) => uploadTargetCat && handleFileUpload(uploadTargetCat)(e)} />
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginTop: '48px' }}>
+                    {categories.map(item => (
+                        <div key={item.label} onClick={() => setActiveCategory(activeCategory === item.cat ? null : item.cat)} style={{ cursor: 'pointer', backgroundColor: 'white', border: activeCategory === item.cat ? '3.5px solid #0f172a' : '1.5px solid #e2e8f0', borderRadius: '16px', padding: '24px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.02)' }}>
+                            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.1em' }}>{item.label}</div>
+                            <div style={{ fontSize: '32px', fontWeight: '900', color: '#0f172a' }}>{getCount(item.cat)}</div>
+                            <div style={{ background: item.color, height: '5px', borderRadius: '3px', width: '45px', margin: '16px auto 0' }}></div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Uploaded files strip (icons/cards) */}
+                <div style={{ marginTop: '24px', marginBottom: '48px', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                        <div>
+                            <div style={{ fontSize: '12px', fontWeight: 900, color: '#94a3b8', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Uploaded Files</div>
+                            <div style={{ marginTop: '6px', fontSize: '18px', fontWeight: 900, color: '#0f172a' }}>
+                                {activeCategory ? `${activeCategory} Files` : 'All Categories'}
+                            </div>
+                        </div>
+                        <div style={{ fontSize: '12px', fontWeight: 900, color: '#64748b' }}>
+                            {activeCategory ? `${getCount(activeCategory)} files` : `${documents.filter(d => d.category !== 'IDENTITY').length} files`}
+                        </div>
+                    </div>
+
+                    <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+                        {(activeCategory ? documents.filter(d => d.category === activeCategory) : documents.filter(d => d.category !== 'IDENTITY'))
+                            .slice()
+                            .sort((a, b) => String(b.uploadDate || '').localeCompare(String(a.uploadDate || '')))
+                            .map((doc) => {
+                                const catColor = (categories.find(c => c.cat === doc.category)?.color) || '#e2e8f0';
+
+                                return (
+                                    <div key={doc.id} style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', backgroundColor: '#ffffff', position: 'relative' }}>
+                                        {/* Delete */}
+                                        <button
+                                            onClick={async () => {
+                                                if (!confirm(`Delete "${doc.name}"?`)) return;
+
+                                                const prev = documents;
+                                                // Optimistic UI update
+                                                saveVault(prev.filter(d => d.id !== doc.id));
+
+                                                try {
+                                                    // Delete storage object (best-effort)
+                                                    if (doc.storagePath) {
+                                                        await supabase.storage.from('documents').remove([doc.storagePath]);
+                                                    }
+
+                                                    const { error } = await supabase
+                                                        .from('documents')
+                                                        .delete()
+                                                        .eq('id', doc.id);
+                                                    if (error) throw error;
+                                                } catch (err) {
+                                                    console.error('Delete failed:', err);
+                                                    alert('Delete failed. Please try again.');
+                                                    // Roll back UI
+                                                    saveVault(prev);
+                                                }
+                                            }}
+                                            title="Delete file"
+                                            style={{
+                                                position: 'absolute',
+                                                top: 10,
+                                                right: 10,
+                                                width: 32,
+                                                height: 32,
+                                                borderRadius: 10,
+                                                border: '1px solid #e2e8f0',
+                                                background: '#ffffff',
+                                                cursor: 'pointer',
+                                                fontWeight: 900,
+                                                color: '#ef4444',
+                                                boxShadow: '0 6px 18px rgba(15,23,42,0.08)'
+                                            }}
+                                        >
+                                            ✕
+                                        </button>
+
+                                        <div style={{ height: '110px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                            {String(doc.thumbnail || '').startsWith('data:') ? (
+                                                <img src={doc.thumbnail} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <div style={{ fontSize: '34px' }}>{doc.thumbnail || '📄'}</div>
+                                            )}
+                                        </div>
+
+                                        {/* Category accent bar */}
+                                        <div style={{ height: 4, background: catColor }} />
+
+                                        <div style={{ padding: '12px' }}>
+                                            <div style={{ fontSize: '12px', fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</div>
+                                            <div style={{ marginTop: '6px', fontSize: '10px', fontWeight: 900, color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{doc.category}</div>
+                                            <div style={{ marginTop: '6px', fontSize: '11px', fontWeight: 800, color: '#64748b' }}>{doc.uploadDate}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                        {(activeCategory ? documents.filter(d => d.category === activeCategory) : documents.filter(d => d.category !== 'IDENTITY')).length === 0 && (
+                            <div style={{ gridColumn: '1 / -1', padding: '16px', color: '#94a3b8', fontWeight: 900 }}>
+                                No files uploaded yet{activeCategory ? ` in ${activeCategory}` : ''}.
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default ClientDocumentsPage;

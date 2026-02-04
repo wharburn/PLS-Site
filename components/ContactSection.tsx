@@ -13,9 +13,6 @@ const ContactSection: React.FC<ContactSectionProps> = ({ lang }) => {
       <div className="flex flex-col lg:flex-row gap-16">
         <div className="lg:w-1/2">
           <h2 className="text-4xl font-bold text-slate-900 mb-6">{t.title}</h2>
-          <p className="text-slate-600 text-lg mb-10">
-            {t.desc}
-          </p>
 
           <div className="space-y-8">
             <div className="flex items-start gap-6">
@@ -25,21 +22,37 @@ const ContactSection: React.FC<ContactSectionProps> = ({ lang }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
-              <div>
+              <div style={{ width: '100%' }}>
                 <h4 className="text-lg font-bold text-slate-900">{lang === 'en' ? 'London Office' : 'Escritório em Londres'}</h4>
                 <p className="text-slate-500">38 Wilcox Road, Vauxhall, London SW8 2UX</p>
+
+                <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 shadow-lg" style={{ width: '100%', height: 260 }}>
+                  <iframe
+                    title="PLS Consultants — 38 Wilcox Road"
+                    width="100%"
+                    height="260"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src="https://www.google.com/maps?q=38%20Wilcox%20Road,%20Vauxhall,%20London%20SW8%202UX&z=12&output=embed"
+                  />
+                </div>
               </div>
             </div>
 
             <div className="flex items-start gap-6">
-              <div className="w-12 h-12 bg-indigo-600 flex items-center justify-center rounded-2xl text-white flex-shrink-0 shadow-lg shadow-indigo-600/20">
+              <a
+                href="tel:+442076222299"
+                className="w-12 h-12 bg-indigo-600 flex items-center justify-center rounded-2xl text-white flex-shrink-0 shadow-lg shadow-indigo-600/20 hover:opacity-90 transition-opacity"
+                aria-label={lang === 'en' ? 'Call PLS Consultants' : 'Ligar para a PLS Consultants'}
+              >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
-              </div>
+              </a>
               <div>
                 <h4 className="text-lg font-bold text-slate-900">{lang === 'en' ? 'Telephone' : 'Telefone'}</h4>
-                <p className="text-slate-500">020 7622 2299</p>
+                <a className="text-slate-500 hover:text-amber-600 font-bold" href="tel:+442076222299">020 7622 2299</a>
               </div>
             </div>
 
@@ -71,6 +84,9 @@ const ContactSection: React.FC<ContactSectionProps> = ({ lang }) => {
 
         <div className="lg:w-1/2">
           <div className="bg-white p-10 rounded-3xl shadow-2xl border border-slate-100">
+            <div className="text-slate-600 text-lg font-medium mb-6">
+              {t.desc}
+            </div>
             <form className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>

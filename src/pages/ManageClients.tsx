@@ -6,7 +6,7 @@ export const ManageClients: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
-    client_name: '',
+    name: '',
     phone: '',
     address: '',
     city: '',
@@ -46,10 +46,10 @@ export const ManageClients: React.FC = () => {
 
       if (error) throw error;
 
-      setMessage(`✅ Client ${formData.client_name} created successfully`);
+      setMessage(`✅ Client ${formData.name} created successfully`);
       setFormData({
         email: '',
-        client_name: '',
+        name: '',
         phone: '',
         address: '',
         city: '',
@@ -86,9 +86,9 @@ export const ManageClients: React.FC = () => {
             />
             <input
               type="text"
-              name="client_name"
+              name="name"
               placeholder="Client Name *"
-              value={formData.client_name}
+              value={formData.name}
               onChange={handleInputChange}
               required
             />
@@ -175,7 +175,7 @@ export const ManageClients: React.FC = () => {
             <tbody>
               {clients.map((client) => (
                 <tr key={client.id}>
-                  <td>{client.client_name}</td>
+                  <td>{client.name}</td>
                   <td>{client.email}</td>
                   <td>{client.city || '-'}</td>
                   <td>

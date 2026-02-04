@@ -1,24 +1,25 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
+# dependencies
 node_modules
-dist
-dist-ssr
-*.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# build output
+dist
+
+# local uploads / generated files
+uploads
+*.thumb.png
+
+# env
+.env
+.env.*
+
+# logs
+*.log
+*.log.*
+
+# OS
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+
+# misc
+admin-helpchat.log.jsonl
+admin-helpchat.outbox.jsonl
+admin-selected-clients.json

@@ -39,11 +39,13 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
   };
 
   const navItems = [
-    { name: t.nav.home, href: '/' },
+    { name: t.nav.home, href: '/#home' },
     { name: t.nav.services, href: '/#services' },
     { name: t.nav.partners, href: '/#partners' },
     { name: t.nav.leadership, href: '/#about' },
-    { name: 'Client Portal', href: '/client' },
+    { name: 'Resources', href: '/resources' },
+    { name: 'Features', href: '/features' },
+    { name: 'Client Portal', href: '/#client-portal' },
     { name: t.nav.contact, href: '/#contact' },
   ];
 
@@ -77,7 +79,10 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
               <Link
                 key={item.name}
                 to={item.href}
-                 className={`text-sm font-medium hover:text-amber-500 transition-colors text-slate-700`}
+                 className={`text-sm font-medium transition-colors text-slate-700`}
+                 style={{ color: '#475569' }}
+                 onMouseEnter={(e) => e.currentTarget.style.color = '#c5a059'}
+                 onMouseLeave={(e) => e.currentTarget.style.color = '#475569'}
             >
               {item.name}
             </Link>
@@ -90,9 +95,9 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
             onClick={() => setLang(lang === 'en' ? 'pt' : 'en')}
              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all text-xs font-bold uppercase tracking-wider relative md:static top-[35px] md:top-0 right-[-40px] md:right-0 border-slate-200 text-slate-600 hover:bg-slate-50`}
           >
-            <span className={lang === 'en' ? 'text-amber-500' : ''}>EN</span>
+            <span style={{ color: lang === 'en' ? '#c5a059' : '#64748b' }}>EN</span>
             <div className="w-px h-3 bg-current opacity-30"></div>
-            <span className={lang === 'pt' ? 'text-amber-500' : ''}>PT</span>
+            <span style={{ color: lang === 'pt' ? '#c5a059' : '#64748b' }}>PT</span>
           </button>
 
           <button
@@ -114,10 +119,15 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick, lang, setLang }) => {
 
           {!hideCta && (
             <Link
-              to="/client"
-              className={`bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-amber-500/20 ${
+              to="/#client-portal"
+              className={`text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all shadow-lg ${
                 lang === 'pt' ? 'relative right-[15px]' : ''
               }`}
+              style={{
+                backgroundColor: '#c5a059'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#a88650'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#c5a059'}
             >
               {t.nav.cta}
             </Link>

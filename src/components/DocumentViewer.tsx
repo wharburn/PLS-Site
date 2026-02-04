@@ -14,7 +14,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({ document, onClos
   };
 
   const fileType = getFileType(document.filename);
-  const storageUrl = `https://vbyxkoirudagvgnxgndk.supabase.co/storage/v1/object/public/statements/${document.storage_path}`;
+  const storageUrl = `https://ivrnnzubplghzizefmjw.supabase.co/storage/v1/object/public/statements/${document.storage_path}`;
 
   return (
     <div className="document-viewer-overlay" onClick={onClose}>
